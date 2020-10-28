@@ -1,22 +1,32 @@
-## Obsidian Sample Plugin
+## Obsidian Plugin: Jump to link
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+![](./screenshots/presentation.gif)
 
-This project uses Typescript to provide type checking and documentation.
-The repo contains the latest plugin API (obsidian.d.ts) in Typescript Definition format, which contains TSDoc comments describing what it does.
+Quickly jump between links using `Ctrl+'` hotkey.
 
-**Note:** The Obsidian API is still in early alpha and is subject to change at any time!
+You can switch between links presentation (modal or popovers).
 
-### How to use
+Works with Obsidian 0.9.7
 
-- Clone this repo.
-- `npm i` or `yarn` to install dependencies
-- `npm run dev` to start compilation in watch mode.
+![](./screenshots/settings.png)
+
+### Plans for future
+- Fix issues
+- Add custom hotkey for jump initiation
+- Add support for standard markdown links
+- Refactor draw modal and use API functionality
 
 ### How to install the plugin
 
 - Copy over `main.js`, `styles.css`, `manifest.json` to your vault `vault/.obsidian/plugins/plugin-id/`.
 
-### API Documentation
+For additional info check [this post](https://forum.obsidian.md/t/plugin-directory/6706?u=mrjackphil)
 
-See https://github.com/obsidianmd/obsidian-api
+### Known issues
+- When there are many links (more than English letters) others will appear with `undefined` keyword and can't be 
+activated.
+
+## Support
+
+- [Patreon](https://patreon.com/mrjackphil)
+- [Paypal](https://www.paypal.com/paypalme/mrjackphil)
