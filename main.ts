@@ -24,27 +24,6 @@ export default class JumpToLink extends Plugin {
 	    this.initHotkey = this.initHotkey.bind(this)
 		console.log('loading plugin');
 
-		this.addRibbonIcon('dice', 'Sample Plugin', () => {
-			new Notice('This is a notice!');
-		});
-
-		this.addStatusBarItem().setText('Status Bar Text');
-
-		this.addCommand({
-			id: 'jump-link',
-			name: 'Open Sample Modal',
-			checkCallback: (checking: boolean) => {
-				let leaf = this.app.workspace.activeLeaf;
-				if (leaf) {
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
-					return true;
-				}
-				return false;
-			}
-		});
-
 		this.addSettingTab(new SettingTab(this.app, this));
 
 		document.addEventListener('keydown', this.initHotkey);
@@ -114,22 +93,6 @@ export default class JumpToLink extends Plugin {
 		document.addEventListener('keydown', this.cancel);
 
 		return hotkeyAr;
-	}
-}
-
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
-	}
-
-	onOpen() {
-		let {contentEl} = this;
-		contentEl.setText('Woah!');
-	}
-
-	onClose() {
-		let {contentEl} = this;
-		contentEl.empty();
 	}
 }
 
