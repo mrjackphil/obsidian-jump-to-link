@@ -55,7 +55,6 @@ export default class JumpToLink extends Plugin {
 	manageSourceLinkHints = (cmEditor: Editor): void => {
 		const linkHints = this.getSourceLinkHints(cmEditor);
 		if (linkHints.length) {
-			this.activateLinkHints(linkHints);
 			if (this.settings.mode === 'modal') {
 				this.displayModal(linkHints);
 			} else if (this.settings.mode === 'popovers') {
