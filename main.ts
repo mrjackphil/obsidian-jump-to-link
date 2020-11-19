@@ -5,38 +5,41 @@ import { LinkHintBase, LinkHintMode, LinkHintType, PreviewLinkHint, Settings, So
 export default class JumpToLink extends Plugin {
 	isLinkHintActive: boolean = false;
 	settings: Settings;
+	prefixInfo: { prefix: string, shiftKey: boolean } | undefined = undefined;
 
 	async onload() {
-		console.log('loading plugin');
+		console.log('loading jump to links plugin');
 
 		this.settings = await this.loadData() || new Settings();
 
 		this.addSettingTab(new SettingTab(this.app, this));
 
-		document.addEventListener('keydown', this.handleKeyDown);
+		this.addCommand({
+			id: 'activate-jump-to-link',
+			name: 'Jump to Link',
+			callback: this.handleJumpToLink,
+			hotkeys: [{modifiers: ['Ctrl'], key: '\''}]
+		})
 	}
 
 	onunload() {
-		console.log('unloading plugin');
-		document.removeEventListener('keydown', this.handleKeyDown);
-		console.log('Plugin is off');
+		console.log('unloading jump to links plugin');
+		console.log('Jump to links plugin is off');
 	}
 
-	handleKeyDown = (event: KeyboardEvent) => {
+	handleJumpToLink = () => {
 		if (this.isLinkHintActive) {
 			return;
 		}
 
 		const currentView = this.app.workspace.activeLeaf.view;
 
-		if (event.key == '\'' && event.ctrlKey) {
-			if (currentView.getState().mode === 'preview') {
-				const previewViewEl: HTMLElement = (currentView as any).previewMode.containerEl.querySelector('div.markdown-preview-view');
-				this.managePreviewLinkHints(previewViewEl);
-			} else if (currentView.getState().mode === 'source') {
-				const cmEditor: Editor = (currentView as any).sourceMode.cmEditor;
-				this.manageSourceLinkHints(cmEditor);
-			}
+		if (currentView.getState().mode === 'preview') {
+			const previewViewEl: HTMLElement = (currentView as any).previewMode.containerEl.querySelector('div.markdown-preview-view');
+			this.managePreviewLinkHints(previewViewEl);
+		} else if (currentView.getState().mode === 'source') {
+			const cmEditor: Editor = (currentView as any).sourceMode.cmEditor;
+			this.manageSourceLinkHints(cmEditor);
 		}
 	};
 
@@ -68,9 +71,8 @@ export default class JumpToLink extends Plugin {
 		const linkHintMap: { [letter: string]: LinkHintBase } = {};
 		linkHints.forEach(x => linkHintMap[x.letter] = x);
 
-		const handleHotkey = (event: KeyboardEvent, link: LinkHintBase) => {
+		const handleHotkey = (newLeaf: boolean, link: LinkHintBase) => {
 			if (link.type === 'internal') {
-				const newLeaf = event.shiftKey;
 				// not sure why the second argument in openLinkText is necessary.
 				this.app.workspace.openLinkText(link.linkText, '', newLeaf, { active: true });
 			} else if (link.type === 'external') {
@@ -79,34 +81,55 @@ export default class JumpToLink extends Plugin {
 			}
 		}
 
-		const cancel = (event: KeyboardEvent): void => {
+		const handleKeyDown = (event: KeyboardEvent): void => {
 			if (event.key === 'Shift') {
 				return;
 			}
-			const linkHint = linkHintMap[event.key.toUpperCase()];
+
+			const eventKey = event.key.toUpperCase();
+			const prefixes = new Set(Object.keys(linkHintMap).filter(x => x.length > 1).map(x => x[0]));
+
+			let linkHint: LinkHintBase;
+			if (this.prefixInfo) {
+				linkHint = linkHintMap[this.prefixInfo.prefix + eventKey];
+			} else {
+				linkHint = linkHintMap[eventKey];
+				if (!linkHint && prefixes && prefixes.has(eventKey)) {
+					this.prefixInfo = { prefix: eventKey, shiftKey: event.shiftKey };
+
+					event.preventDefault();
+					event.stopPropagation();
+					event.stopImmediatePropagation();
+					
+					return;
+				}
+			}
+
 			event.preventDefault();
 			event.stopPropagation();
 			event.stopImmediatePropagation();
 
-			linkHint && handleHotkey(event, linkHint);
+			const newLeaf = this.prefixInfo?.shiftKey || event.shiftKey;
 
-			document.removeEventListener('keydown', cancel);
+			linkHint && handleHotkey(newLeaf, linkHint);
+
+			document.removeEventListener('keydown', handleKeyDown);
 			document.querySelectorAll('.jl.popover').forEach(e => e.remove());
 			document.querySelectorAll('#jl-modal').forEach(e => e.remove());
+			this.prefixInfo = undefined;
 			this.isLinkHintActive = false;
 		};
 
-		document.addEventListener('keydown', cancel);
+		document.addEventListener('keydown', handleKeyDown);
 		this.isLinkHintActive = true;
 	}
 
 	getPreviewLinkHints = (previewViewEl: HTMLElement): PreviewLinkHint[] => {
-		const alphabet: string = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-
-		const links = previewViewEl.querySelectorAll('a');
+		const anchorEls = previewViewEl.querySelectorAll('a');
+		const embedEls = previewViewEl.querySelectorAll('.internal-embed');
 
 		const linkHints: PreviewLinkHint[] = [];
-		links.forEach((anchorEl, i) => {
+		anchorEls.forEach((anchorEl, i) => {
 			const linkType: LinkHintType = anchorEl.hasClass('internal-link') 
 				? 'internal'
 				: 'external';
@@ -115,21 +138,84 @@ export default class JumpToLink extends Plugin {
 				? anchorEl.dataset['href']
 				: anchorEl.href;
 
+			let offsetParent = anchorEl.offsetParent as HTMLElement;
+			let top = anchorEl.offsetTop;
+			let left = anchorEl.offsetLeft;
+
+			while (offsetParent) {
+				if (offsetParent == previewViewEl) {
+					offsetParent = undefined;
+				} else {
+					top += offsetParent.offsetTop;
+					left += offsetParent.offsetLeft;
+					offsetParent = offsetParent.offsetParent as HTMLElement;
+				}
+			}
+
 			linkHints.push({
-				letter: alphabet[i],
+				letter: '',
 				linkText: linkText,
 				type: linkType,
-				left: anchorEl.offsetLeft,
-				top: anchorEl.offsetTop,
+				top: top,
+				left: left,
 			});
 		});
 
-		return linkHints;
+		embedEls.forEach((embedEl, i) => {
+			const linkText = embedEl.getAttribute('src');
+			const linkEl = embedEl.querySelector('.markdown-embed-link') as HTMLElement;
+
+			if (linkText && linkEl) {
+				let offsetParent = linkEl.offsetParent as HTMLElement;
+				let top = linkEl.offsetTop;
+				let left = linkEl.offsetLeft;
+
+				while (offsetParent) {
+					if (offsetParent == previewViewEl) {
+						offsetParent = undefined;
+					} else {
+						top += offsetParent.offsetTop;
+						left += offsetParent.offsetLeft;
+						offsetParent = offsetParent.offsetParent as HTMLElement;
+					}
+				}
+
+				linkHints.push({
+					letter: '',
+					linkText: linkText,
+					type: 'internal',
+					top: top,
+					left: left,
+				});
+			}
+		});
+
+		const sortedLinkHints = linkHints.sort((a, b) => {
+			if (a.top > b.top) {
+				return 1;
+			} else if (a.top === b.top) {
+				if (a.left > b.left) {
+					return 1;
+				} else if (a.left === b.left) {
+					return 0; 
+				} else {
+					return -1;
+				}
+			} else {
+				return -1;
+			}
+		});
+
+		const linkHintLetters = this.getLinkHintLetters(sortedLinkHints.length);
+
+		sortedLinkHints.forEach((linkHint, i) => {
+			linkHint.letter = linkHintLetters[i];
+		});
+
+		return sortedLinkHints;
 	}
 	
 	getSourceLinkHints = (cmEditor: Editor): SourceLinkHint[] => {
-		const alphabet: string = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-
 		// expecting either [[Link]] or [[Link|Title]]
 		const regExInternal = /\[\[(.+?)(\|.+?)?\]\]/g;
 		// expecting [Title](link)
@@ -150,15 +236,49 @@ export default class JumpToLink extends Plugin {
 			linksWithIndex.push({ index: regExResult.index, type: 'external', linkText })
 		}
 
-		const linksWithLetter: SourceLinkHint[] = [];
+		const linkHintLetters = this.getLinkHintLetters(linksWithIndex.length);
 
+		const linksWithLetter: SourceLinkHint[] = [];
 		linksWithIndex
 			.sort((x,y) => x.index - y.index)
-			.forEach((x, i) => {
-				linksWithLetter.push({ letter: alphabet[i], ...x});
+			.forEach((linkHint, i) => {
+				linksWithLetter.push({ letter: linkHintLetters[i], ...linkHint});
 			});
 
 		return linksWithLetter;
+	}
+
+	getLinkHintLetters = (numLinkHints: number): string[] => {
+		const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+		let prefixCount = Math.ceil((numLinkHints - alphabet.length) / (alphabet.length - 1))
+
+		// ensure 0 <= prefixCount <= alphabet.length
+		prefixCount = Math.max(prefixCount, 0);
+		prefixCount = Math.min(prefixCount, alphabet.length);
+
+		const prefixes = ['', ...Array.from(alphabet.slice(0, prefixCount))];
+
+		const linkHintLetters = []
+		for (var i = 0; i < prefixes.length; i++) {
+			const prefix = prefixes[i]
+			for (var j = 0; j < alphabet.length; j++) {
+				if (linkHintLetters.length < numLinkHints) {
+					const letter = alphabet[j];
+					if (prefix === '') {
+						if (!prefixes.includes(letter)) {
+							linkHintLetters.push(letter);
+						}
+					} else {
+						linkHintLetters.push(prefix + letter)
+					}
+				} else {
+					break;
+				}
+			}
+		}
+
+		return linkHintLetters;
 	}
 
 	displayModal = (linkHints: LinkHintBase[]): void => {
