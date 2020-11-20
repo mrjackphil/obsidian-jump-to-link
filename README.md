@@ -10,6 +10,11 @@ Works with Obsidian 0.9.7
 
 ![](./screenshots/settings.png)
 
+### How to use
+- Open command pallete (Ctrl+P), find and choose `Jump to link` command
+- You can use hotkey (Ctrl + ') by default
+- If there any links in opened file you should see letters over them (or modal window with links and letters) which should be pressed to open the link
+
 ### How to install the plugin
 
 - Copy over `main.js`, `styles.css`, `manifest.json` to your vault `vault/.obsidian/plugins/plugin-id/`.
