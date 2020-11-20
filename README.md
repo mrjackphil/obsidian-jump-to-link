@@ -1,20 +1,14 @@
 ## Obsidian Plugin: Jump to link
 
-![](./screenshots/presentation.gif)
+![](https://user-images.githubusercontent.com/5632228/99727862-27fbee80-2a7e-11eb-8af2-7303cc177fca.png)
 
-Quickly jump between links using `Ctrl+'` hotkey.
+Quickly jump between links using hotkey.
 
 You can switch between links presentation (modal or popovers).
 
 Works with Obsidian 0.9.7
 
 ![](./screenshots/settings.png)
-
-### Plans for future
-- Fix issues
-- Add custom hotkey for jump initiation
-- Add support for standard markdown links
-- Refactor draw modal and use API functionality
 
 ### How to install the plugin
 
@@ -23,8 +17,7 @@ Works with Obsidian 0.9.7
 For additional info check [this post](https://forum.obsidian.md/t/plugin-directory/6706?u=mrjackphil)
 
 ### Known issues
-- When there are many links (more than English letters) others will appear with `undefined` keyword and can't be 
-activated.
+- Links that are scrolled out of view within an embedded note that scrolls don't get placed properly
 
 ## Support
 
