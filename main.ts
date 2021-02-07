@@ -220,6 +220,8 @@ export default class JumpToLink extends Plugin {
 		const regExInternal = /\[\[(.+?)(\|.+?)?\]\]/g;
 		// expecting [Title](link)
 		const regExExternal = /\[.+?\]\((.+?)\)/g;
+		// expecting http://hogehoge or https://hogehoge
+		const regExUrl = /(?<= |\n|^)(https?:\/\/[^ \n]+)/g;
 
 		const strs = cmEditor.getValue();
 
@@ -230,8 +232,13 @@ export default class JumpToLink extends Plugin {
 			const linkText = regExResult[1];
 			linksWithIndex.push({ index: regExResult.index, type: 'internal', linkText });
 		}
-		
+
 		while(regExResult = regExExternal.exec(strs)) {
+			const linkText = regExResult[1];
+			linksWithIndex.push({ index: regExResult.index, type: 'external', linkText })
+		}
+
+		while(regExResult = regExUrl.exec(strs)) {
 			const linkText = regExResult[1];
 			linksWithIndex.push({ index: regExResult.index, type: 'external', linkText })
 		}
