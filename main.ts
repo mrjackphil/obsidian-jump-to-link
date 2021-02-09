@@ -81,6 +81,14 @@ export default class JumpToLink extends Plugin {
 			}
 		}
 
+		const removePopovers = () => {
+			document.removeEventListener('click', removePopovers)
+			document.querySelectorAll('.jl.popover').forEach(e => e.remove());
+			document.querySelectorAll('#jl-modal').forEach(e => e.remove());
+			this.prefixInfo = undefined;
+			this.isLinkHintActive = false;
+		}
+
 		const handleKeyDown = (event: KeyboardEvent): void => {
 			if (event.key === 'Shift') {
 				return;
@@ -114,12 +122,10 @@ export default class JumpToLink extends Plugin {
 			linkHint && handleHotkey(newLeaf, linkHint);
 
 			document.removeEventListener('keydown', handleKeyDown);
-			document.querySelectorAll('.jl.popover').forEach(e => e.remove());
-			document.querySelectorAll('#jl-modal').forEach(e => e.remove());
-			this.prefixInfo = undefined;
-			this.isLinkHintActive = false;
+			removePopovers();
 		};
 
+		document.addEventListener('click', removePopovers)
 		document.addEventListener('keydown', handleKeyDown);
 		this.isLinkHintActive = true;
 	}
