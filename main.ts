@@ -8,8 +8,6 @@ export default class JumpToLink extends Plugin {
     prefixInfo: { prefix: string, shiftKey: boolean } | undefined = undefined;
 
     async onload() {
-        console.log('loading jump to links plugin');
-
         this.settings = await this.loadData() || new Settings();
 
         this.addSettingTab(new SettingTab(this.app, this));
@@ -24,7 +22,6 @@ export default class JumpToLink extends Plugin {
 
     onunload() {
         console.log('unloading jump to links plugin');
-        console.log('Jump to links plugin is off');
     }
 
     handleJumpToLink = () => {
@@ -273,9 +270,9 @@ export default class JumpToLink extends Plugin {
         const prefixes = ['', ...Array.from(alphabet.slice(0, prefixCount))];
 
         const linkHintLetters = []
-        for (var i = 0; i < prefixes.length; i++) {
+        for (let i = 0; i < prefixes.length; i++) {
             const prefix = prefixes[i]
-            for (var j = 0; j < alphabet.length; j++) {
+            for (let j = 0; j < alphabet.length; j++) {
                 if (linkHintLetters.length < numLinkHints) {
                     const letter = alphabet[j];
                     if (prefix === '') {
@@ -322,7 +319,7 @@ export default class JumpToLink extends Plugin {
     }
 
     displayPreviewPopovers = (markdownPreviewViewEl: HTMLElement, linkHints: PreviewLinkHint[]): void => {
-        for (var linkHint of linkHints) {
+        for (let linkHint of linkHints) {
             const linkHintEl = markdownPreviewViewEl.createEl('div');
             linkHintEl.style.top = linkHint.top + 'px';
             linkHintEl.style.left = linkHint.left + 'px';
