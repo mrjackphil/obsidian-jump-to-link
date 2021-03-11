@@ -71,7 +71,7 @@ export default class JumpToLink extends Plugin {
         const handleHotkey = (newLeaf: boolean, link: LinkHintBase) => {
             if (link.type === 'internal') {
                 // not sure why the second argument in openLinkText is necessary.
-                this.app.workspace.openLinkText(link.linkText, '', newLeaf, { active: true });
+                this.app.workspace.openLinkText(decodeURI(link.linkText), '', newLeaf, { active: true });
             } else if (link.type === 'external') {
                 // todo
                 require('electron').shell.openExternal(link.linkText);
@@ -221,8 +221,10 @@ export default class JumpToLink extends Plugin {
     getSourceLinkHints = (cmEditor: Editor): SourceLinkHint[] => {
         // expecting either [[Link]] or [[Link|Title]]
         const regExInternal = /\[\[(.+?)(\|.+?)?\]\]/g;
-        // expecting [Title](link)
-        const regExExternal = /\[.+?\]\((.+?)\)/g;
+        // expecting [Title](../example.md)
+        const regExMdInternal = /\[.+?\]\(((\.\.|\w|\d).+?)\)/g;
+        // expecting [Title](file://link) or [Title](https://link)
+        const regExExternal = /\[.+?\]\(((https?:|file:).+?)\)/g;
         // expecting http://hogehoge or https://hogehoge
         const regExUrl = /(?<= |\n|^)(https?:\/\/[^ \n]+)/g;
 
@@ -232,6 +234,11 @@ export default class JumpToLink extends Plugin {
         let regExResult;
 
         while(regExResult = regExInternal.exec(strs)) {
+            const linkText = regExResult[1];
+            linksWithIndex.push({ index: regExResult.index, type: 'internal', linkText });
+        }
+
+        while(regExResult = regExMdInternal.exec(strs)) {
             const linkText = regExResult[1];
             linksWithIndex.push({ index: regExResult.index, type: 'internal', linkText });
         }
