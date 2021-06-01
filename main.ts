@@ -17,7 +17,14 @@ export default class JumpToLink extends Plugin {
             name: 'Jump to Link',
             callback: this.handleJumpToLink,
             hotkeys: [{modifiers: ['Ctrl'], key: '\''}]
-        })
+        });
+
+        this.addCommand({
+            id: "activate-jump-to-anywhere",
+            name: "Jump to Anywhere Regex",
+            callback: this.handleJumpToRegex,
+            hotkeys: [{ modifiers: ["Ctrl"], key: ";" }],
+        });
     }
 
     onunload() {
@@ -38,7 +45,18 @@ export default class JumpToLink extends Plugin {
             const cmEditor: Editor = (currentView as any).sourceMode.cmEditor;
             this.manageSourceLinkHints(cmEditor);
         }
-    };
+    }
+
+    handleJumpToRegex = () => {
+        const currentView = this.app.workspace.activeLeaf.view;
+
+        if (this.isLinkHintActive || currentView.getState().mode !== "source") {
+            return;
+        }
+
+        const cmEditor: Editor = (currentView as any).sourceMode.cmEditor;
+        this.manageSourceLinkHints(cmEditor, "regex");
+    }
 
     managePreviewLinkHints = (previewViewEl: HTMLElement): void => {
         const linkHints = this.getPreviewLinkHints(previewViewEl);
@@ -52,29 +70,32 @@ export default class JumpToLink extends Plugin {
         }
     }
 
-    manageSourceLinkHints = (cmEditor: Editor): void => {
-        const linkHints = this.getSourceLinkHints(cmEditor);
+    manageSourceLinkHints = (cmEditor: Editor, mode = "link"): void => {
+        const linkHints = (mode === "link" ? this.getSourceLinkHints(cmEditor) : this.getRegexLinkHints(cmEditor));
         if (linkHints.length) {
-            if (this.settings.mode === 'modal') {
+            if (this.settings.mode === "modal") {
                 this.displayModal(linkHints);
-            } else if (this.settings.mode === 'popovers') {
+            } else if (this.settings.mode === "popovers") {
                 this.displaySourcePopovers(cmEditor, linkHints);
             }
-            this.activateLinkHints(linkHints);
+            this.activateLinkHints(linkHints, cmEditor);
         }
     };
 
-    activateLinkHints = (linkHints: LinkHintBase[]): void => {
+    activateLinkHints = (linkHints: LinkHintBase[], cmEditor?: Editor): void => {
         const linkHintMap: { [letter: string]: LinkHintBase } = {};
         linkHints.forEach(x => linkHintMap[x.letter] = x);
 
-        const handleHotkey = (newLeaf: boolean, link: LinkHintBase) => {
+        const handleHotkey = (newLeaf: boolean, link: SourceLinkHint | LinkHintBase) => {
             if (link.type === 'internal') {
                 // not sure why the second argument in openLinkText is necessary.
                 this.app.workspace.openLinkText(decodeURI(link.linkText), '', newLeaf, { active: true });
             } else if (link.type === 'external') {
                 // todo
                 require('electron').shell.openExternal(link.linkText);
+            } else {
+                const editor = cmEditor;
+                editor.setCursor(editor.posFromIndex((<SourceLinkHint>link).index));
             }
         }
 
@@ -231,6 +252,52 @@ export default class JumpToLink extends Plugin {
         return sortedLinkHints;
     }
 
+    getVisibleLineText(cmEditor: Editor) {
+        // Grab only visible lines
+        const { from, to } = cmEditor.getViewport()
+        const indOffset = cmEditor.indexFromPos({ch:0, line: from})
+        const strs = cmEditor.getRange({ch: 0, line: from}, {ch: 0, line: to + 1})
+
+        return { indOffset, strs };
+    }
+
+    getRegexLinkHints = (cmEditor: Editor): SourceLinkHint[] => {
+        const regExUrl = new RegExp(this.settings.jumpToAnywhereRegex, 'g');
+
+        let linksWithIndex: {
+            index: number;
+            type: "regex";
+            linkText: string;
+        }[] = [];
+
+        const { indOffset, strs } = this.getVisibleLineText(cmEditor);
+
+        let regExResult;
+
+        while ((regExResult = regExUrl.exec(strs))) {
+            const linkText = regExResult[1];
+            linksWithIndex.push({
+                index: regExResult.index + indOffset,
+                type: "regex",
+                linkText,
+            });
+        }
+
+        const linkHintLetters = this.getLinkHintLetters(linksWithIndex.length);
+
+        const linksWithLetter: SourceLinkHint[] = [];
+        linksWithIndex
+            .sort((x, y) => x.index - y.index)
+            .forEach((linkHint, i) => {
+                linksWithLetter.push({
+                    letter: linkHintLetters[i],
+                    ...linkHint,
+                });
+            });
+
+        return linksWithLetter;
+    };
+
     getSourceLinkHints = (cmEditor: Editor): SourceLinkHint[] => {
         // expecting either [[Link]] or [[Link|Title]]
         const regExInternal = /\[\[(.+?)(\|.+?)?\]\]/g;
@@ -241,10 +308,7 @@ export default class JumpToLink extends Plugin {
         // expecting http://hogehoge or https://hogehoge
         const regExUrl = /(?<= |\n|^)(https?:\/\/[^ \n]+)/g;
 
-        // Grab only visible lines
-        const { from, to } = cmEditor.getViewport()
-        const indOffset = cmEditor.indexFromPos({ch:0, line: from})
-        const strs = cmEditor.getRange({ch: 0, line: from}, {ch: 0, line: to + 1})
+        const { indOffset, strs } = this.getVisibleLineText(cmEditor);
 
         let linksWithIndex: { index: number, type: 'internal' | 'external', linkText: string }[] = [];
         let regExResult;
@@ -412,6 +476,19 @@ class SettingTab extends PluginSettingTab {
                         this.plugin.settings.letters = value
                         this.plugin.saveData(this.plugin.settings)
                     })
-            })
+            });
+
+        new Setting(containerEl)
+            .setName('Jump To Anywhere')
+            .setDesc("Regex based navigating in editor mode")
+            .addText((text) =>
+                text
+                .setPlaceholder('Custom Regex')
+                .setValue(this.plugin.settings.jumpToAnywhereRegex)
+                .onChange(async (value) => {
+                    this.plugin.settings.jumpToAnywhereRegex = value;
+                    await this.plugin.saveData(this.plugin.settings);
+                })
+            );
     }
 }
