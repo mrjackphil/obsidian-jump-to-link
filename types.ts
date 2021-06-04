@@ -20,4 +20,6 @@ export interface SourceLinkHint extends LinkHintBase {
 
 export class Settings {
 	mode: LinkHintMode = 'popovers';
+	// Defaults as in Vimium extension for browsers
+	letters: string = 'sadfjklewcmpgh';
 }

@@ -266,7 +266,7 @@ export default class JumpToLink extends Plugin {
     }
 
     getLinkHintLetters = (numLinkHints: number): string[] => {
-        const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        const alphabet = this.settings.letters.toUpperCase()
 
         let prefixCount = Math.ceil((numLinkHints - alphabet.length) / (alphabet.length - 1))
 
@@ -386,5 +386,16 @@ class SettingTab extends PluginSettingTab {
                     this.plugin.saveData(this.plugin.settings);
                 })
             });
+
+        new Setting(containerEl)
+            .setName('Characters used for link hints')
+            .setDesc('The characters placed next to each link after enter link-hint mode.')
+            .addText(cb => {
+                cb.setValue(this.plugin.settings.letters)
+                    .onChange((value: string) => {
+                        this.plugin.settings.letters = value
+                        this.plugin.saveData(this.plugin.settings)
+                    })
+            })
     }
 }
