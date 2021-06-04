@@ -127,12 +127,21 @@ export default class JumpToLink extends Plugin {
         this.isLinkHintActive = true;
     }
 
+    checkIsPreviewElOnScreen(parent: HTMLElement, el: HTMLElement) {
+        return el.offsetTop < parent.scrollTop || el.offsetTop > parent.scrollTop + parent.offsetHeight
+    }
+
     getPreviewLinkHints = (previewViewEl: HTMLElement): PreviewLinkHint[] => {
+        const {checkIsPreviewElOnScreen} = this
         const anchorEls = previewViewEl.querySelectorAll('a');
         const embedEls = previewViewEl.querySelectorAll('.internal-embed');
 
         const linkHints: PreviewLinkHint[] = [];
         anchorEls.forEach((anchorEl, i) => {
+            if (checkIsPreviewElOnScreen(previewViewEl, anchorEl)) {
+                return
+            }
+
             const linkType: LinkHintType = anchorEl.hasClass('internal-link')
                 ? 'internal'
                 : 'external';
@@ -169,6 +178,10 @@ export default class JumpToLink extends Plugin {
             const linkEl = embedEl.querySelector('.markdown-embed-link') as HTMLElement;
 
             if (linkText && linkEl) {
+                if (checkIsPreviewElOnScreen(previewViewEl, linkEl)) {
+                    return
+                }
+
                 let offsetParent = linkEl.offsetParent as HTMLElement;
                 let top = linkEl.offsetTop;
                 let left = linkEl.offsetLeft;
@@ -228,6 +241,7 @@ export default class JumpToLink extends Plugin {
         // expecting http://hogehoge or https://hogehoge
         const regExUrl = /(?<= |\n|^)(https?:\/\/[^ \n]+)/g;
 
+        // Grab only visible lines
         const { from, to } = cmEditor.getViewport()
         const indOffset = cmEditor.indexFromPos({ch:0, line: from})
         const strs = cmEditor.getRange({ch: 0, line: from}, {ch: 0, line: to + 1})
