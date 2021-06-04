@@ -228,29 +228,31 @@ export default class JumpToLink extends Plugin {
         // expecting http://hogehoge or https://hogehoge
         const regExUrl = /(?<= |\n|^)(https?:\/\/[^ \n]+)/g;
 
-        const strs = cmEditor.getValue();
+        const { from, to } = cmEditor.getViewport()
+        const indOffset = cmEditor.indexFromPos({ch:0, line: from})
+        const strs = cmEditor.getRange({ch: 0, line: from}, {ch: 0, line: to + 1})
 
         let linksWithIndex: { index: number, type: 'internal' | 'external', linkText: string }[] = [];
         let regExResult;
 
         while(regExResult = regExInternal.exec(strs)) {
             const linkText = regExResult[1];
-            linksWithIndex.push({ index: regExResult.index, type: 'internal', linkText });
+            linksWithIndex.push({ index: regExResult.index + indOffset, type: 'internal', linkText });
         }
 
         while(regExResult = regExMdInternal.exec(strs)) {
             const linkText = regExResult[1];
-            linksWithIndex.push({ index: regExResult.index, type: 'internal', linkText });
+            linksWithIndex.push({ index: regExResult.index + indOffset, type: 'internal', linkText });
         }
 
         while(regExResult = regExExternal.exec(strs)) {
             const linkText = regExResult[1];
-            linksWithIndex.push({ index: regExResult.index, type: 'external', linkText })
+            linksWithIndex.push({ index: regExResult.index + indOffset, type: 'external', linkText })
         }
 
         while(regExResult = regExUrl.exec(strs)) {
             const linkText = regExResult[1];
-            linksWithIndex.push({ index: regExResult.index, type: 'external', linkText })
+            linksWithIndex.push({ index: regExResult.index + indOffset, type: 'external', linkText })
         }
 
         const linkHintLetters = this.getLinkHintLetters(linksWithIndex.length);
