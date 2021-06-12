@@ -36,10 +36,11 @@ Works with Obsidian 0.9.7
 
 ### Known issues
 - Links that are scrolled out of view within an embedded note that scrolls don't get placed properly
+  - [x] Should be fixed but needs more tests 
 - JumpToAnywhere Regex performance issues on large documents (runs out of letters and results in slow performance)
   - Possible Fixes
-    - Raise number of possible combinations to 3 letters
-    - Contain text selection only to visible lines
+    - [ ] Raise number of possible combinations to 3 letters
+    - [x] Contain text selection only to visible lines
 
 ## Support
 
