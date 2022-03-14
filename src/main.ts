@@ -1,6 +1,8 @@
 import {App, Plugin, PluginSettingTab, Setting} from 'obsidian';
 import { Editor } from 'codemirror';
 import { LinkHintBase, LinkHintType, PreviewLinkHint, Settings, SourceLinkHint } from 'types';
+import {displaySourcePopovers, getLinkHintLetters, getVisibleLineText} from "./common";
+import {RegexpProcessor} from "./RegexpProcessor";
 
 export default class JumpToLink extends Plugin {
     isLinkHintActive: boolean = false;
@@ -48,14 +50,17 @@ export default class JumpToLink extends Plugin {
     }
 
     handleJumpToRegex = () => {
-        const currentView = this.app.workspace.activeLeaf.view;
+        const { app, isLinkHintActive, settings: { letters, jumpToAnywhereRegex }, activateLinkHints } = this
+        const currentView = app.workspace.activeLeaf.view;
 
-        if (this.isLinkHintActive || currentView.getState().mode !== "source") {
+        if (isLinkHintActive || currentView.getState().mode !== "source") {
             return;
         }
 
         const cmEditor: Editor = (currentView as any).sourceMode.cmEditor;
-        this.manageSourceLinkHints(cmEditor, "regex");
+        const Processor = new RegexpProcessor(cmEditor, jumpToAnywhereRegex, letters);
+
+        Processor.init(activateLinkHints);
     }
 
     managePreviewLinkHints = (previewViewEl: HTMLElement): void => {
@@ -66,10 +71,10 @@ export default class JumpToLink extends Plugin {
         }
     }
 
-    manageSourceLinkHints = (cmEditor: Editor, mode = "link"): void => {
-        const linkHints = (mode === "link" ? this.getSourceLinkHints(cmEditor) : this.getRegexLinkHints(cmEditor));
+    manageSourceLinkHints = (cmEditor: Editor): void => {
+        const linkHints = this.getSourceLinkHints(cmEditor)
         if (linkHints.length) {
-            this.displaySourcePopovers(cmEditor, linkHints);
+            displaySourcePopovers(cmEditor, linkHints);
             this.activateLinkHints(linkHints, cmEditor);
         }
     };
@@ -145,7 +150,7 @@ export default class JumpToLink extends Plugin {
     }
 
     getPreviewLinkHints = (previewViewEl: HTMLElement): PreviewLinkHint[] => {
-        const {checkIsPreviewElOnScreen} = this
+        const {checkIsPreviewElOnScreen, settings: { letters }} = this
         const anchorEls = previewViewEl.querySelectorAll('a');
         const embedEls = previewViewEl.querySelectorAll('.internal-embed');
 
@@ -235,7 +240,7 @@ export default class JumpToLink extends Plugin {
             }
         });
 
-        const linkHintLetters = this.getLinkHintLetters(sortedLinkHints.length);
+        const linkHintLetters = getLinkHintLetters(letters, sortedLinkHints.length);
 
         sortedLinkHints.forEach((linkHint, i) => {
             linkHint.letter = linkHintLetters[i];
@@ -244,55 +249,8 @@ export default class JumpToLink extends Plugin {
         return sortedLinkHints;
     }
 
-    getVisibleLineText(cmEditor: Editor) {
-        // Grab only visible lines
-        const scrollInfo = cmEditor.getScrollInfo();
-        const { line: from } = cmEditor.coordsChar({ left: 0, top: 0 }, 'page');
-        const { line: to } = cmEditor.coordsChar({ left: scrollInfo.left, top: scrollInfo.top + scrollInfo.height})
-        const indOffset = cmEditor.indexFromPos({ch:0, line: from})
-        const strs = cmEditor.getRange({ch: 0, line: from}, {ch: 0, line: to + 1})
-
-        return { indOffset, strs };
-    }
-
-    getRegexLinkHints = (cmEditor: Editor): SourceLinkHint[] => {
-        const regExUrl = new RegExp(this.settings.jumpToAnywhereRegex, 'g');
-
-        let linksWithIndex: {
-            index: number;
-            type: "regex";
-            linkText: string;
-        }[] = [];
-
-        const { indOffset, strs } = this.getVisibleLineText(cmEditor);
-
-        let regExResult;
-
-        while ((regExResult = regExUrl.exec(strs))) {
-            const linkText = regExResult[1];
-            linksWithIndex.push({
-                index: regExResult.index + indOffset,
-                type: "regex",
-                linkText,
-            });
-        }
-
-        const linkHintLetters = this.getLinkHintLetters(linksWithIndex.length);
-
-        const linksWithLetter: SourceLinkHint[] = [];
-        linksWithIndex
-            .sort((x, y) => x.index - y.index)
-            .forEach((linkHint, i) => {
-                linksWithLetter.push({
-                    letter: linkHintLetters[i],
-                    ...linkHint,
-                });
-            });
-
-        return linksWithLetter.filter(link => link.letter);
-    };
-
     getSourceLinkHints = (cmEditor: Editor): SourceLinkHint[] => {
+        const { settings: { letters } } = this
         // expecting either [[Link]] or [[Link|Title]]
         const regExInternal = /\[\[(.+?)(\|.+?)?]]/g;
         // expecting [Title](../example.md)
@@ -302,7 +260,7 @@ export default class JumpToLink extends Plugin {
         // expecting http://hogehoge or https://hogehoge
         const regExUrl = /(?<= |\n|^)(https?:\/\/[^ \n]+)/g;
 
-        const { indOffset, strs } = this.getVisibleLineText(cmEditor);
+        const { indOffset, strs } = getVisibleLineText(cmEditor);
 
         let linksWithIndex: { index: number, type: 'internal' | 'external', linkText: string }[] = [];
         let regExResult;
@@ -327,7 +285,7 @@ export default class JumpToLink extends Plugin {
             linksWithIndex.push({ index: regExResult.index + indOffset, type: 'external', linkText })
         }
 
-        const linkHintLetters = this.getLinkHintLetters(linksWithIndex.length);
+        const linkHintLetters = getLinkHintLetters(letters, linksWithIndex.length);
 
         const linksWithLetter: SourceLinkHint[] = [];
         linksWithIndex
@@ -337,39 +295,6 @@ export default class JumpToLink extends Plugin {
             });
 
         return linksWithLetter.filter(link => link.letter);
-    }
-
-    getLinkHintLetters = (numLinkHints: number): string[] => {
-        const alphabet = this.settings.letters.toUpperCase()
-
-        let prefixCount = Math.ceil((numLinkHints - alphabet.length) / (alphabet.length - 1))
-
-        // ensure 0 <= prefixCount <= alphabet.length
-        prefixCount = Math.max(prefixCount, 0);
-        prefixCount = Math.min(prefixCount, alphabet.length);
-
-        const prefixes = ['', ...Array.from(alphabet.slice(0, prefixCount))];
-
-        const linkHintLetters = []
-        for (let i = 0; i < prefixes.length; i++) {
-            const prefix = prefixes[i]
-            for (let j = 0; j < alphabet.length; j++) {
-                if (linkHintLetters.length < numLinkHints) {
-                    const letter = alphabet[j];
-                    if (prefix === '') {
-                        if (!prefixes.contains(letter)) {
-                            linkHintLetters.push(letter);
-                        }
-                    } else {
-                        linkHintLetters.push(prefix + letter)
-                    }
-                } else {
-                    break;
-                }
-            }
-        }
-
-        return linkHintLetters;
     }
 
     displayPreviewPopovers = (markdownPreviewViewEl: HTMLElement, linkHints: PreviewLinkHint[]): void => {
@@ -382,24 +307,6 @@ export default class JumpToLink extends Plugin {
             linkHintEl.classList.add('jl');
             linkHintEl.classList.add('popover');
         }
-    }
-
-    displaySourcePopovers = (cmEditor: Editor, linkKeyMap: SourceLinkHint[]): void => {
-        const createWidgetElement = (content: string) => {
-            const linkHintEl = document.createElement('div');
-            linkHintEl.classList.add('jl');
-            linkHintEl.classList.add('popover');
-            linkHintEl.innerHTML = content;
-            return linkHintEl;
-        }
-
-        const drawWidget = (cmEditor: Editor, linkHint: SourceLinkHint) => {
-            const pos = cmEditor.posFromIndex(linkHint.index);
-            // the fourth parameter is undocumented. it specifies where the widget should be place
-            return (cmEditor as any).addWidget(pos, createWidgetElement(linkHint.letter), false, 'over');
-        }
-
-        linkKeyMap.forEach(x => drawWidget(cmEditor, x));
     }
 }
 
