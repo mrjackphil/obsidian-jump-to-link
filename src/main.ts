@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import {App, Plugin, PluginSettingTab, Setting} from 'obsidian';
 import { Editor } from 'codemirror';
 import { LinkHintBase, LinkHintType, PreviewLinkHint, Settings, SourceLinkHint } from 'types';
 
@@ -246,7 +246,9 @@ export default class JumpToLink extends Plugin {
 
     getVisibleLineText(cmEditor: Editor) {
         // Grab only visible lines
-        const { from, to } = cmEditor.getViewport()
+        const scrollInfo = cmEditor.getScrollInfo();
+        const { line: from } = cmEditor.coordsChar({ left: 0, top: 0 }, 'page');
+        const { line: to } = cmEditor.coordsChar({ left: scrollInfo.left, top: scrollInfo.top + scrollInfo.height})
         const indOffset = cmEditor.indexFromPos({ch:0, line: from})
         const strs = cmEditor.getRange({ch: 0, line: from}, {ch: 0, line: to + 1})
 
