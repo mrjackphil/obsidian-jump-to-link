@@ -289,7 +289,7 @@ export default class JumpToLink extends Plugin {
                 });
             });
 
-        return linksWithLetter;
+        return linksWithLetter.filter(link => link.letter);
     };
 
     getSourceLinkHints = (cmEditor: Editor): SourceLinkHint[] => {
@@ -336,7 +336,7 @@ export default class JumpToLink extends Plugin {
                 linksWithLetter.push({ letter: linkHintLetters[i], ...linkHint});
             });
 
-        return linksWithLetter;
+        return linksWithLetter.filter(link => link.letter);
     }
 
     getLinkHintLetters = (numLinkHints: number): string[] => {
