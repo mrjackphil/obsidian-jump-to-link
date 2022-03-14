@@ -1,6 +1,6 @@
 import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { Editor } from 'codemirror';
-import { LinkHintBase, LinkHintMode, LinkHintType, PreviewLinkHint, Settings, SourceLinkHint } from 'types';
+import { LinkHintBase, LinkHintType, PreviewLinkHint, Settings, SourceLinkHint } from 'types';
 
 export default class JumpToLink extends Plugin {
     isLinkHintActive: boolean = false;
@@ -61,11 +61,7 @@ export default class JumpToLink extends Plugin {
     managePreviewLinkHints = (previewViewEl: HTMLElement): void => {
         const linkHints = this.getPreviewLinkHints(previewViewEl);
         if (linkHints.length) {
-            if (this.settings.mode === 'modal') {
-                this.displayModal(linkHints);
-            } else if (this.settings.mode === 'popovers') {
-                this.displayPreviewPopovers(previewViewEl, linkHints);
-            }
+            this.displayPreviewPopovers(previewViewEl, linkHints);
             this.activateLinkHints(linkHints);
         }
     }
@@ -73,11 +69,7 @@ export default class JumpToLink extends Plugin {
     manageSourceLinkHints = (cmEditor: Editor, mode = "link"): void => {
         const linkHints = (mode === "link" ? this.getSourceLinkHints(cmEditor) : this.getRegexLinkHints(cmEditor));
         if (linkHints.length) {
-            if (this.settings.mode === "modal") {
-                this.displayModal(linkHints);
-            } else if (this.settings.mode === "popovers") {
-                this.displaySourcePopovers(cmEditor, linkHints);
-            }
+            this.displaySourcePopovers(cmEditor, linkHints);
             this.activateLinkHints(linkHints, cmEditor);
         }
     };
@@ -158,12 +150,12 @@ export default class JumpToLink extends Plugin {
         const embedEls = previewViewEl.querySelectorAll('.internal-embed');
 
         const linkHints: PreviewLinkHint[] = [];
-        anchorEls.forEach((anchorEl, i) => {
+        anchorEls.forEach((anchorEl, _i) => {
             if (checkIsPreviewElOnScreen(previewViewEl, anchorEl)) {
                 return
             }
 
-            const linkType: LinkHintType = anchorEl.hasClass('internal-link')
+            const linkType: LinkHintType = anchorEl.classList.contains('internal-link')
                 ? 'internal'
                 : 'external';
 
@@ -194,7 +186,7 @@ export default class JumpToLink extends Plugin {
             });
         });
 
-        embedEls.forEach((embedEl, i) => {
+        embedEls.forEach((embedEl, _i) => {
             const linkText = embedEl.getAttribute('src');
             const linkEl = embedEl.querySelector('.markdown-embed-link') as HTMLElement;
 
@@ -300,11 +292,11 @@ export default class JumpToLink extends Plugin {
 
     getSourceLinkHints = (cmEditor: Editor): SourceLinkHint[] => {
         // expecting either [[Link]] or [[Link|Title]]
-        const regExInternal = /\[\[(.+?)(\|.+?)?\]\]/g;
+        const regExInternal = /\[\[(.+?)(\|.+?)?]]/g;
         // expecting [Title](../example.md)
-        const regExMdInternal = /\[.+?\]\(((\.\.|\w|\d).+?)\)/g;
+        const regExMdInternal = /\[.+?]\(((\.\.|\w|\d).+?)\)/g;
         // expecting [Title](file://link) or [Title](https://link)
-        const regExExternal = /\[.+?\]\(((https?:|file:).+?)\)/g;
+        const regExExternal = /\[.+?]\(((https?:|file:).+?)\)/g;
         // expecting http://hogehoge or https://hogehoge
         const regExUrl = /(?<= |\n|^)(https?:\/\/[^ \n]+)/g;
 
@@ -363,7 +355,7 @@ export default class JumpToLink extends Plugin {
                 if (linkHintLetters.length < numLinkHints) {
                     const letter = alphabet[j];
                     if (prefix === '') {
-                        if (!prefixes.includes(letter)) {
+                        if (!prefixes.contains(letter)) {
                             linkHintLetters.push(letter);
                         }
                     } else {
@@ -378,33 +370,6 @@ export default class JumpToLink extends Plugin {
         return linkHintLetters;
     }
 
-    displayModal = (linkHints: LinkHintBase[]): void => {
-        const modalEl = document.createElement('div');
-        modalEl.innerHTML =  `
-			<div class="modal-container" id="jl-modal">
-				<div class="modal-bg"></div>
-				<div class="modal">
-					<div class="modal-close-button"></div>
-					<div class="modal-title">Jump to links</div>
-					<div class="modal-content"></div>
-				</div>
-			</div>
-		`;
-        modalEl.querySelector('.modal-close-button').addEventListener('click', modalEl.remove);
-        document.body.appendChild(modalEl);
-
-        const linkEl = (content: string) => {
-            const el = document.createElement('div');
-            el.innerHTML = content;
-            return el;
-        };
-
-        const modalContentEl = modalEl.querySelector('.modal-content');
-        linkHints.forEach((linkHint: LinkHintBase) =>
-            modalContentEl.appendChild(linkEl(linkHint.letter + ' ' + linkHint.linkText))
-        );
-    }
-
     displayPreviewPopovers = (markdownPreviewViewEl: HTMLElement, linkHints: PreviewLinkHint[]): void => {
         for (let linkHint of linkHints) {
             const linkHintEl = markdownPreviewViewEl.createEl('div');
@@ -412,16 +377,16 @@ export default class JumpToLink extends Plugin {
             linkHintEl.style.left = linkHint.left + 'px';
 
             linkHintEl.textContent = linkHint.letter;
-            linkHintEl.addClass('jl');
-            linkHintEl.addClass('popover');
+            linkHintEl.classList.add('jl');
+            linkHintEl.classList.add('popover');
         }
     }
 
     displaySourcePopovers = (cmEditor: Editor, linkKeyMap: SourceLinkHint[]): void => {
         const createWidgetElement = (content: string) => {
             const linkHintEl = document.createElement('div');
-            linkHintEl.addClass('jl');
-            linkHintEl.addClass('popover');
+            linkHintEl.classList.add('jl');
+            linkHintEl.classList.add('popover');
             linkHintEl.innerHTML = content;
             return linkHintEl;
         }
@@ -452,20 +417,21 @@ class SettingTab extends PluginSettingTab {
 
         containerEl.createEl('h2', {text: 'Settings for Jump To Link.'});
 
-        new Setting(containerEl)
-            .setName('Presentation')
-            .setDesc('How to show links')
-            .addDropdown(cb => { cb
-                .addOptions({
-                    "popovers": 'Popovers',
-                    "modal": 'Modal'
-                })
-                .setValue(this.plugin.settings.mode)
-                .onChange((value: LinkHintMode) => {
-                    this.plugin.settings.mode = value;
-                    this.plugin.saveData(this.plugin.settings);
-                })
-            });
+        /* Modal mode deprecated */
+        // new Setting(containerEl)
+        //     .setName('Presentation')
+        //     .setDesc('How to show links')
+        //     .addDropdown(cb => { cb
+        //         .addOptions({
+        //             "popovers": 'Popovers',
+        //             "modal": 'Modal'
+        //         })
+        //         .setValue(this.plugin.settings.mode)
+        //         .onChange((value: LinkHintMode) => {
+        //             this.plugin.settings.mode = value;
+        //             this.plugin.saveData(this.plugin.settings);
+        //         })
+        //     });
 
         new Setting(containerEl)
             .setName('Characters used for link hints')
