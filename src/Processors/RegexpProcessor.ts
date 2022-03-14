@@ -1,10 +1,8 @@
 import {Editor} from "codemirror";
-import {LinkHintBase, SourceLinkHint} from "../types";
-import {displaySourcePopovers, getLinkHintLetters, getVisibleLineText} from "./common";
+import {Callback, LinkHintBase, SourceLinkHint} from "../../types";
+import {displaySourcePopovers, getLinkHintLetters, getVisibleLineText} from "../common";
 
-type Callback = (links: LinkHintBase[], editor: Editor) => void
-
-export class RegexpProcessor {
+export default class RegexpProcessor {
     cmEditor: Editor;
     regexp: string;
     alphabet: string;
@@ -15,7 +13,7 @@ export class RegexpProcessor {
         this.alphabet = alphabet;
     }
 
-    init(cb: Callback) {
+    public init(cb: Callback) {
         const [content, offset] = this.getVisibleContent();
         const links = this.getLinks(content, offset);
 
@@ -23,14 +21,14 @@ export class RegexpProcessor {
         this.callback(cb, links);
     }
 
-    getVisibleContent(): [string, number] {
+    private getVisibleContent(): [string, number] {
         const { cmEditor } = this;
         const { indOffset, strs } = getVisibleLineText(cmEditor);
 
         return [strs, indOffset];
     }
 
-    getLinks(content: string, offset: number): SourceLinkHint[] {
+    private getLinks(content: string, offset: number): SourceLinkHint[] {
         const { regexp, alphabet } = this;
         const regExUrl = new RegExp(regexp, 'g');
 
@@ -66,12 +64,12 @@ export class RegexpProcessor {
         return linksWithLetter.filter(link => link.letter);
     }
 
-    display(links: SourceLinkHint[]): void {
+    private display(links: SourceLinkHint[]): void {
         const { cmEditor } = this
         displaySourcePopovers(cmEditor, links);
     }
 
-    callback(fn: Callback, hints: LinkHintBase[]): void {
+    private callback(fn: Callback, hints: LinkHintBase[]): void {
         const { cmEditor } = this
         fn(hints, cmEditor);
     }

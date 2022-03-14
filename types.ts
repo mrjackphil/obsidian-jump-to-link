@@ -1,3 +1,5 @@
+import {Editor} from "codemirror";
+
 export type LinkHintType = 'internal' | 'external' | 'regex';
 
 export interface LinkHintBase {
@@ -20,3 +22,5 @@ export class Settings {
 	letters: string = 'sadfjklewcmpgh';
 	jumpToAnywhereRegex: string = '\\b\\w{3,}\\b';
 }
+
+export type Callback = (links: LinkHintBase[], editor?: Editor) => void

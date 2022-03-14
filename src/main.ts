@@ -1,8 +1,15 @@
-import {App, Plugin, PluginSettingTab, Setting} from 'obsidian';
+import {App, Plugin, PluginSettingTab, Setting, View} from 'obsidian';
 import { Editor } from 'codemirror';
-import { LinkHintBase, LinkHintType, PreviewLinkHint, Settings, SourceLinkHint } from 'types';
+import { LinkHintBase, Settings, SourceLinkHint } from 'types';
 import {displaySourcePopovers, getLinkHintLetters, getVisibleLineText} from "./common";
-import {RegexpProcessor} from "./RegexpProcessor";
+import RegexpProcessor from "./Processors/RegexpProcessor";
+import PreviewLinkProcessor from "./Processors/PreviewLinkProcessor";
+
+enum VIEW_MODE {
+    SOURCE,
+    PREVIEW,
+    LIVE_PREVIEW
+}
 
 export default class JumpToLink extends Plugin {
     isLinkHintActive: boolean = false;
@@ -17,14 +24,14 @@ export default class JumpToLink extends Plugin {
         this.addCommand({
             id: 'activate-jump-to-link',
             name: 'Jump to Link',
-            callback: this.handleJumpToLink,
+            callback: this.action.bind(this, 'link'),
             hotkeys: [{modifiers: ['Ctrl'], key: '\''}]
         });
 
         this.addCommand({
             id: "activate-jump-to-anywhere",
             name: "Jump to Anywhere Regex",
-            callback: this.handleJumpToRegex,
+            callback: this.action.bind(this, 'regexp'),
             hotkeys: [{ modifiers: ["Ctrl"], key: ";" }],
         });
     }
@@ -33,42 +40,63 @@ export default class JumpToLink extends Plugin {
         console.log('unloading jump to links plugin');
     }
 
-    handleJumpToLink = () => {
+    action(type: 'link' | 'regexp') {
         if (this.isLinkHintActive) {
             return;
         }
 
-        const currentView = this.app.workspace.activeLeaf.view;
+        switch (type) {
+            case "link":
+                this.handleJumpToLink();
+                return
+            case "regexp":
+                this.handleJumpToRegex();
+                return
+        }
+    }
 
+    getMode(currentView: View): VIEW_MODE {
         if (currentView.getState().mode === 'preview') {
-            const previewViewEl: HTMLElement = (currentView as any).previewMode.containerEl.querySelector('div.markdown-preview-view');
-            this.managePreviewLinkHints(previewViewEl);
+            return VIEW_MODE.PREVIEW;
         } else if (currentView.getState().mode === 'source') {
-            const cmEditor: Editor = (currentView as any).sourceMode.cmEditor;
-            this.manageSourceLinkHints(cmEditor);
+            return VIEW_MODE.SOURCE;
+        }
+
+        return VIEW_MODE.SOURCE;
+    }
+
+    handleJumpToLink = () => {
+        const { settings: { letters }, app } = this
+
+        const currentView = app.workspace.activeLeaf.view;
+        const mode = this.getMode(currentView);
+
+        switch (mode) {
+            case VIEW_MODE.SOURCE:
+                const cmEditor: Editor = (currentView as any).sourceMode.cmEditor;
+                this.manageSourceLinkHints(cmEditor);
+                return
+            case VIEW_MODE.PREVIEW:
+                const previewViewEl: HTMLElement = (currentView as any).previewMode.containerEl.querySelector('div.markdown-preview-view');
+                new PreviewLinkProcessor(previewViewEl, letters).init(this.activateLinkHints);
+                return
+            case VIEW_MODE.LIVE_PREVIEW:
+                return
         }
     }
 
     handleJumpToRegex = () => {
-        const { app, isLinkHintActive, settings: { letters, jumpToAnywhereRegex }, activateLinkHints } = this
+        const { app, isLinkHintActive, settings: { letters, jumpToAnywhereRegex } } = this
         const currentView = app.workspace.activeLeaf.view;
+        const mode = this.getMode(currentView);
 
-        if (isLinkHintActive || currentView.getState().mode !== "source") {
+        if (isLinkHintActive || mode !== VIEW_MODE.SOURCE) {
             return;
         }
 
         const cmEditor: Editor = (currentView as any).sourceMode.cmEditor;
-        const Processor = new RegexpProcessor(cmEditor, jumpToAnywhereRegex, letters);
 
-        Processor.init(activateLinkHints);
-    }
-
-    managePreviewLinkHints = (previewViewEl: HTMLElement): void => {
-        const linkHints = this.getPreviewLinkHints(previewViewEl);
-        if (linkHints.length) {
-            this.displayPreviewPopovers(previewViewEl, linkHints);
-            this.activateLinkHints(linkHints);
-        }
+        new RegexpProcessor(cmEditor, jumpToAnywhereRegex, letters).init(this.activateLinkHints);
     }
 
     manageSourceLinkHints = (cmEditor: Editor): void => {
@@ -145,110 +173,6 @@ export default class JumpToLink extends Plugin {
         this.isLinkHintActive = true;
     }
 
-    checkIsPreviewElOnScreen(parent: HTMLElement, el: HTMLElement) {
-        return el.offsetTop < parent.scrollTop || el.offsetTop > parent.scrollTop + parent.offsetHeight
-    }
-
-    getPreviewLinkHints = (previewViewEl: HTMLElement): PreviewLinkHint[] => {
-        const {checkIsPreviewElOnScreen, settings: { letters }} = this
-        const anchorEls = previewViewEl.querySelectorAll('a');
-        const embedEls = previewViewEl.querySelectorAll('.internal-embed');
-
-        const linkHints: PreviewLinkHint[] = [];
-        anchorEls.forEach((anchorEl, _i) => {
-            if (checkIsPreviewElOnScreen(previewViewEl, anchorEl)) {
-                return
-            }
-
-            const linkType: LinkHintType = anchorEl.classList.contains('internal-link')
-                ? 'internal'
-                : 'external';
-
-            const linkText = linkType === 'internal'
-                ? anchorEl.dataset['href']
-                : anchorEl.href;
-
-            let offsetParent = anchorEl.offsetParent as HTMLElement;
-            let top = anchorEl.offsetTop;
-            let left = anchorEl.offsetLeft;
-
-            while (offsetParent) {
-                if (offsetParent == previewViewEl) {
-                    offsetParent = undefined;
-                } else {
-                    top += offsetParent.offsetTop;
-                    left += offsetParent.offsetLeft;
-                    offsetParent = offsetParent.offsetParent as HTMLElement;
-                }
-            }
-
-            linkHints.push({
-                letter: '',
-                linkText: linkText,
-                type: linkType,
-                top: top,
-                left: left,
-            });
-        });
-
-        embedEls.forEach((embedEl, _i) => {
-            const linkText = embedEl.getAttribute('src');
-            const linkEl = embedEl.querySelector('.markdown-embed-link') as HTMLElement;
-
-            if (linkText && linkEl) {
-                if (checkIsPreviewElOnScreen(previewViewEl, linkEl)) {
-                    return
-                }
-
-                let offsetParent = linkEl.offsetParent as HTMLElement;
-                let top = linkEl.offsetTop;
-                let left = linkEl.offsetLeft;
-
-                while (offsetParent) {
-                    if (offsetParent == previewViewEl) {
-                        offsetParent = undefined;
-                    } else {
-                        top += offsetParent.offsetTop;
-                        left += offsetParent.offsetLeft;
-                        offsetParent = offsetParent.offsetParent as HTMLElement;
-                    }
-                }
-
-                linkHints.push({
-                    letter: '',
-                    linkText: linkText,
-                    type: 'internal',
-                    top: top,
-                    left: left,
-                });
-            }
-        });
-
-        const sortedLinkHints = linkHints.sort((a, b) => {
-            if (a.top > b.top) {
-                return 1;
-            } else if (a.top === b.top) {
-                if (a.left > b.left) {
-                    return 1;
-                } else if (a.left === b.left) {
-                    return 0;
-                } else {
-                    return -1;
-                }
-            } else {
-                return -1;
-            }
-        });
-
-        const linkHintLetters = getLinkHintLetters(letters, sortedLinkHints.length);
-
-        sortedLinkHints.forEach((linkHint, i) => {
-            linkHint.letter = linkHintLetters[i];
-        });
-
-        return sortedLinkHints;
-    }
-
     getSourceLinkHints = (cmEditor: Editor): SourceLinkHint[] => {
         const { settings: { letters } } = this
         // expecting either [[Link]] or [[Link|Title]]
@@ -295,18 +219,6 @@ export default class JumpToLink extends Plugin {
             });
 
         return linksWithLetter.filter(link => link.letter);
-    }
-
-    displayPreviewPopovers = (markdownPreviewViewEl: HTMLElement, linkHints: PreviewLinkHint[]): void => {
-        for (let linkHint of linkHints) {
-            const linkHintEl = markdownPreviewViewEl.createEl('div');
-            linkHintEl.style.top = linkHint.top + 'px';
-            linkHintEl.style.left = linkHint.left + 'px';
-
-            linkHintEl.textContent = linkHint.letter;
-            linkHintEl.classList.add('jl');
-            linkHintEl.classList.add('popover');
-        }
     }
 }
 
