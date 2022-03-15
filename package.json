@@ -1,6 +1,6 @@
 {
   "name": "mrj-jump-to-link",
-  "version": "0.9.7",
+  "version": "0.3.0",
   "description": "This plugin allows open a link in current document using hotkey",
   "main": "main.js",
   "scripts": {
@@ -11,13 +11,13 @@
   "author": "MrJackphil",
   "license": "MIT",
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^15.1.0",
-    "@rollup/plugin-node-resolve": "^9.0.0",
-    "@rollup/plugin-typescript": "^6.0.0",
-    "@types/node": "^14.14.2",
+    "@rollup/plugin-commonjs": "^21.0.2",
+    "@rollup/plugin-node-resolve": "^13.1.3",
+    "@rollup/plugin-typescript": "^8.3.1",
+    "@types/node": "^17.0.21",
     "obsidian": "https://github.com/obsidianmd/obsidian-api/tarball/master",
-    "rollup": "^2.32.1",
-    "tslib": "^2.0.3",
-    "typescript": "^4.0.3"
+    "rollup": "^2.70.1",
+    "tslib": "^2.3.1",
+    "typescript": "^4.6.2"
   }
 }
