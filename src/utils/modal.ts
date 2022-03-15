@@ -1,4 +1,4 @@
-import {LinkHintBase} from "../types";
+import {LinkHintBase} from "../../types";
 
 export function displayModal(linkHints: LinkHintBase[]): void {
     const modalEl = document.createElement('div');

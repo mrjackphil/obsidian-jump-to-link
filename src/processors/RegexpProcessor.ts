@@ -1,6 +1,6 @@
 import {Editor} from "codemirror";
 import {Processor, SourceLinkHint} from "../../types";
-import {displaySourcePopovers, getLinkHintLetters, getVisibleLineText} from "../common";
+import {displaySourcePopovers, getLinkHintLetters, getVisibleLineText} from "../utils/common";
 
 export default class RegexpProcessor implements Processor {
     cmEditor: Editor;

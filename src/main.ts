@@ -1,9 +1,9 @@
 import {App, Plugin, PluginSettingTab, Setting, View} from 'obsidian';
 import { Editor } from 'codemirror';
 import { LinkHintBase, Settings, SourceLinkHint } from 'types';
-import {displaySourcePopovers, getLinkHintLetters, getVisibleLineText} from "./common";
-import RegexpProcessor from "./Processors/RegexpProcessor";
-import PreviewLinkProcessor from "./Processors/PreviewLinkProcessor";
+import {displaySourcePopovers, getLinkHintLetters, getVisibleLineText} from "./utils/common";
+import RegexpProcessor from "./processors/RegexpProcessor";
+import PreviewLinkProcessor from "./processors/PreviewLinkProcessor";
 
 enum VIEW_MODE {
     SOURCE,

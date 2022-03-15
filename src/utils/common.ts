@@ -1,5 +1,5 @@
 import {Editor} from "codemirror";
-import {SourceLinkHint} from "../types";
+import {SourceLinkHint} from "../../types";
 
 /**
  * Get only visible content
