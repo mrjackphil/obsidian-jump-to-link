@@ -202,12 +202,12 @@ export default class JumpToLink extends Plugin {
 
             linkHint && handleHotkey(newLeaf, linkHint);
 
-            document.removeEventListener('keydown', handleKeyDown);
+            document.removeEventListener('keydown', handleKeyDown, { capture: true });
             removePopovers();
         };
 
         document.addEventListener('click', removePopovers)
-        document.addEventListener('keydown', handleKeyDown);
+        document.addEventListener('keydown', handleKeyDown, { capture: true });
         this.isLinkHintActive = true;
     }
 }
