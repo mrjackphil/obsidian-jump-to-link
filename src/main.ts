@@ -72,7 +72,7 @@ export default class JumpToLink extends Plugin {
     getMode(currentView: View): VIEW_MODE {
         if (currentView.getState().mode === 'preview') {
             return VIEW_MODE.PREVIEW;
-        } else if ((<{ editMode?: { sourceMode: boolean } }>currentView)?.editMode?.sourceMode === false) {
+        } else if (Array.isArray((<{ editMode?: { livePreviewPlugin: any[] } }>currentView)?.editMode?.livePreviewPlugin)) {
             return VIEW_MODE.LIVE_PREVIEW;
         } else if (currentView.getState().mode === 'source') {
             return VIEW_MODE.SOURCE;
