@@ -103,6 +103,8 @@ export default class JumpToLink extends Plugin {
     }
 
     activateLinkHints = (linkHints: LinkHintBase[], cmEditor?: Editor): void => {
+        if (!linkHints.length) { return; }
+
         const linkHintMap: { [letter: string]: LinkHintBase } = {};
         linkHints.forEach(x => linkHintMap[x.letter] = x);
 
