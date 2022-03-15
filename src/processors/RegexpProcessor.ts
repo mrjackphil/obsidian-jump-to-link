@@ -1,6 +1,7 @@
 import {Editor} from "codemirror";
 import {Processor, SourceLinkHint} from "../../types";
-import {displaySourcePopovers, getLinkHintLetters, getVisibleLineText} from "../utils/common";
+import {displaySourcePopovers, getVisibleLineText} from "../utils/common";
+import {extractRegexpBlocks} from "../utils/regexp";
 
 export default class RegexpProcessor implements Processor {
     cmEditor: Editor;
@@ -29,39 +30,8 @@ export default class RegexpProcessor implements Processor {
     }
 
     private getLinks(content: string, offset: number): SourceLinkHint[] {
-        const { regexp, letters } = this;
-        const regExUrl = new RegExp(regexp, 'g');
-
-        let linksWithIndex: {
-            index: number;
-            type: "regex";
-            linkText: string;
-        }[] = [];
-
-        let regExResult;
-
-        while ((regExResult = regExUrl.exec(content))) {
-            const linkText = regExResult[1];
-            linksWithIndex.push({
-                index: regExResult.index + offset,
-                type: "regex",
-                linkText,
-            });
-        }
-
-        const linkHintLetters = getLinkHintLetters(letters, linksWithIndex.length);
-
-        const linksWithLetter: SourceLinkHint[] = [];
-        linksWithIndex
-            .sort((x, y) => x.index - y.index)
-            .forEach((linkHint, i) => {
-                linksWithLetter.push({
-                    letter: linkHintLetters[i],
-                    ...linkHint,
-                });
-            });
-
-        return linksWithLetter.filter(link => link.letter);
+        const { regexp, letters } = this
+        return extractRegexpBlocks(content, offset, regexp, letters);
     }
 
     private display(links: SourceLinkHint[]): void {

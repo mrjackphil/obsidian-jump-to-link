@@ -1,9 +1,14 @@
 import {App, Plugin, PluginSettingTab, Setting, View} from 'obsidian';
-import { Editor } from 'codemirror';
-import { LinkHintBase, Settings, SourceLinkHint } from 'types';
+import {Editor} from 'codemirror';
+import {LinkHintBase, Settings, SourceLinkHint} from 'types';
 import RegexpProcessor from "./processors/RegexpProcessor";
 import PreviewLinkProcessor from "./processors/PreviewLinkProcessor";
 import SourceLinkProcessor from "./processors/SourceLinkProcessor";
+import LivePreviewLinkProcessor from "./processors/LivePreviewLinkProcessor";
+import {EditorView, ViewPlugin} from "@codemirror/view";
+import {createViewPluginClass, MarkPlugin} from "./cm6-widget/MarkPlugin";
+import {EditorSelection} from "@codemirror/state";
+import LivePreviewRegexProcessor from "./processors/LivePreviewRegexProcessor";
 
 enum VIEW_MODE {
     SOURCE,
@@ -15,11 +20,20 @@ export default class JumpToLink extends Plugin {
     isLinkHintActive: boolean = false;
     settings: Settings;
     prefixInfo: { prefix: string, shiftKey: boolean } | undefined = undefined;
+    markPlugin: MarkPlugin
+    markViewPlugin: ViewPlugin<any>
 
     async onload() {
         this.settings = await this.loadData() || new Settings();
 
         this.addSettingTab(new SettingTab(this.app, this));
+
+        const markPlugin = this.markPlugin = new MarkPlugin([]);
+
+        const markViewPlugin = this.markViewPlugin = ViewPlugin.fromClass(createViewPluginClass(markPlugin), {
+            decorations: v => v.decorations
+        });
+        this.registerEditorExtension([markViewPlugin])
 
         this.addCommand({
             id: 'activate-jump-to-link',
@@ -32,7 +46,7 @@ export default class JumpToLink extends Plugin {
             id: "activate-jump-to-anywhere",
             name: "Jump to Anywhere Regex",
             callback: this.action.bind(this, 'regexp'),
-            hotkeys: [{ modifiers: ["Ctrl"], key: ";" }],
+            hotkeys: [{modifiers: ["Ctrl"], key: ";"}],
         });
     }
 
@@ -58,6 +72,8 @@ export default class JumpToLink extends Plugin {
     getMode(currentView: View): VIEW_MODE {
         if (currentView.getState().mode === 'preview') {
             return VIEW_MODE.PREVIEW;
+        } else if ((<{ editMode?: { sourceMode: boolean } }>currentView)?.editMode?.sourceMode === false) {
+            return VIEW_MODE.LIVE_PREVIEW;
         } else if (currentView.getState().mode === 'source') {
             return VIEW_MODE.SOURCE;
         }
@@ -66,7 +82,7 @@ export default class JumpToLink extends Plugin {
     }
 
     handleJumpToLink = () => {
-        const { settings: { letters }, app } = this
+        const {settings: {letters}, app} = this
 
         const currentView = app.workspace.activeLeaf.view;
         const mode = this.getMode(currentView);
@@ -75,35 +91,53 @@ export default class JumpToLink extends Plugin {
             case VIEW_MODE.SOURCE:
                 const cmEditor: Editor = (currentView as any).sourceMode.cmEditor;
                 const sourceLinkHints = new SourceLinkProcessor(cmEditor, letters).init();
-                this.activateLinkHints(sourceLinkHints, cmEditor);
-                return
+                this.handleActions(sourceLinkHints, cmEditor);
+                break;
             case VIEW_MODE.PREVIEW:
                 const previewViewEl: HTMLElement = (currentView as any).previewMode.containerEl.querySelector('div.markdown-preview-view');
                 const previewLinkHints = new PreviewLinkProcessor(previewViewEl, letters).init();
-                this.activateLinkHints(previewLinkHints);
-                return
+                this.handleActions(previewLinkHints);
+                break;
             case VIEW_MODE.LIVE_PREVIEW:
-                return
+                const cm6Editor: EditorView = (<{ editor?: { cm: EditorView } }>currentView).editor.cm;
+                const livePreviewLinks = new LivePreviewLinkProcessor(cm6Editor, letters).init();
+                this.markPlugin.setLinks(livePreviewLinks);
+                this.app.workspace.updateOptions();
+                this.handleActions(livePreviewLinks);
+                break;
         }
     }
 
     handleJumpToRegex = () => {
-        const { app, isLinkHintActive, settings: { letters, jumpToAnywhereRegex } } = this
+        const {app, settings: {letters, jumpToAnywhereRegex}} = this
         const currentView = app.workspace.activeLeaf.view;
         const mode = this.getMode(currentView);
 
-        if (isLinkHintActive || mode !== VIEW_MODE.SOURCE) {
-            return;
+        switch (mode) {
+            case VIEW_MODE.LIVE_PREVIEW:
+                const cm6Editor: EditorView = (<{ editor?: { cm: EditorView } }>currentView).editor.cm;
+                const livePreviewLinks = new LivePreviewRegexProcessor(cm6Editor, letters, jumpToAnywhereRegex).init();
+                this.markPlugin.setLinks(livePreviewLinks);
+                this.app.workspace.updateOptions();
+                this.handleActions(livePreviewLinks, cm6Editor);
+                break;
+            case VIEW_MODE.PREVIEW:
+                break;
+            case VIEW_MODE.SOURCE:
+                const cmEditor: Editor = (currentView as any).sourceMode.cmEditor;
+                const links = new RegexpProcessor(cmEditor, jumpToAnywhereRegex, letters).init();
+                this.handleActions(links, cmEditor);
+                break;
+            default:
+                break;
         }
 
-        const cmEditor: Editor = (currentView as any).sourceMode.cmEditor;
-
-        const links = new RegexpProcessor(cmEditor, jumpToAnywhereRegex, letters).init();
-        this.activateLinkHints(links, cmEditor);
     }
 
-    activateLinkHints = (linkHints: LinkHintBase[], cmEditor?: Editor): void => {
-        if (!linkHints.length) { return; }
+    handleActions = (linkHints: LinkHintBase[], cmEditor?: Editor | EditorView): void => {
+        if (!linkHints.length) {
+            return;
+        }
 
         const linkHintMap: { [letter: string]: LinkHintBase } = {};
         linkHints.forEach(x => linkHintMap[x.letter] = x);
@@ -111,13 +145,18 @@ export default class JumpToLink extends Plugin {
         const handleHotkey = (newLeaf: boolean, link: SourceLinkHint | LinkHintBase) => {
             if (link.type === 'internal') {
                 // not sure why the second argument in openLinkText is necessary.
-                this.app.workspace.openLinkText(decodeURI(link.linkText), '', newLeaf, { active: true });
+                this.app.workspace.openLinkText(decodeURI(link.linkText), '', newLeaf, {active: true});
             } else if (link.type === 'external') {
                 // todo
                 require('electron').shell.openExternal(link.linkText);
             } else {
                 const editor = cmEditor;
-                editor.setCursor(editor.posFromIndex((<SourceLinkHint>link).index));
+                if (editor instanceof EditorView) {
+                    const index = (link as SourceLinkHint).index;
+                    editor.dispatch({ selection: EditorSelection.cursor(index) })
+                } else {
+                    editor.setCursor(editor.posFromIndex((<SourceLinkHint>link).index));
+                }
             }
         }
 
@@ -126,6 +165,8 @@ export default class JumpToLink extends Plugin {
             document.querySelectorAll('.jl.popover').forEach(e => e.remove());
             document.querySelectorAll('#jl-modal').forEach(e => e.remove());
             this.prefixInfo = undefined;
+            this.markPlugin.clean();
+            this.app.workspace.updateOptions();
             this.isLinkHintActive = false;
         }
 
@@ -143,7 +184,7 @@ export default class JumpToLink extends Plugin {
             } else {
                 linkHint = linkHintMap[eventKey];
                 if (!linkHint && prefixes && prefixes.has(eventKey)) {
-                    this.prefixInfo = { prefix: eventKey, shiftKey: event.shiftKey };
+                    this.prefixInfo = {prefix: eventKey, shiftKey: event.shiftKey};
 
                     event.preventDefault();
                     event.stopPropagation();
@@ -219,12 +260,12 @@ class SettingTab extends PluginSettingTab {
             .setDesc("Regex based navigating in editor mode")
             .addText((text) =>
                 text
-                .setPlaceholder('Custom Regex')
-                .setValue(this.plugin.settings.jumpToAnywhereRegex)
-                .onChange(async (value) => {
-                    this.plugin.settings.jumpToAnywhereRegex = value;
-                    await this.plugin.saveData(this.plugin.settings);
-                })
+                    .setPlaceholder('Custom Regex')
+                    .setValue(this.plugin.settings.jumpToAnywhereRegex)
+                    .onChange(async (value) => {
+                        this.plugin.settings.jumpToAnywhereRegex = value;
+                        await this.plugin.saveData(this.plugin.settings);
+                    })
             );
     }
 }

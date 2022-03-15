@@ -99,15 +99,15 @@ export function getMDHintLinks(content: string, offset: number, letters: string)
     return linksWithLetter.filter(link => link.letter);
 }
 
-export function displaySourcePopovers(cmEditor: Editor, linkKeyMap: SourceLinkHint[]): void {
-    const createWidgetElement = (content: string) => {
-        const linkHintEl = document.createElement('div');
-        linkHintEl.classList.add('jl');
-        linkHintEl.classList.add('popover');
-        linkHintEl.innerHTML = content;
-        return linkHintEl;
-    }
+export function createWidgetElement(content: string) {
+    const linkHintEl = document.createElement('div');
+    linkHintEl.classList.add('jl');
+    linkHintEl.classList.add('popover');
+    linkHintEl.innerHTML = content;
+    return linkHintEl;
+}
 
+export function displaySourcePopovers(cmEditor: Editor, linkKeyMap: SourceLinkHint[]): void {
     const drawWidget = (cmEditor: Editor, linkHint: SourceLinkHint) => {
         const pos = cmEditor.posFromIndex(linkHint.index);
         // the fourth parameter is undocumented. it specifies where the widget should be place
