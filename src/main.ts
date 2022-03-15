@@ -78,7 +78,8 @@ export default class JumpToLink extends Plugin {
                 return
             case VIEW_MODE.PREVIEW:
                 const previewViewEl: HTMLElement = (currentView as any).previewMode.containerEl.querySelector('div.markdown-preview-view');
-                new PreviewLinkProcessor(previewViewEl, letters).init(this.activateLinkHints);
+                const links = new PreviewLinkProcessor(previewViewEl, letters).init();
+                this.activateLinkHints(links);
                 return
             case VIEW_MODE.LIVE_PREVIEW:
                 return
@@ -96,7 +97,8 @@ export default class JumpToLink extends Plugin {
 
         const cmEditor: Editor = (currentView as any).sourceMode.cmEditor;
 
-        new RegexpProcessor(cmEditor, jumpToAnywhereRegex, letters).init(this.activateLinkHints);
+        const links = new RegexpProcessor(cmEditor, jumpToAnywhereRegex, letters).init();
+        this.activateLinkHints(links, cmEditor);
     }
 
     manageSourceLinkHints = (cmEditor: Editor): void => {

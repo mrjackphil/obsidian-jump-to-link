@@ -1,5 +1,3 @@
-import {Editor} from "codemirror";
-
 export type LinkHintType = 'internal' | 'external' | 'regex';
 
 export interface LinkHintBase {
@@ -23,4 +21,6 @@ export class Settings {
 	jumpToAnywhereRegex: string = '\\b\\w{3,}\\b';
 }
 
-export type Callback = (links: LinkHintBase[], editor?: Editor) => void
+export class Processor {
+	public init: () => LinkHintBase[];
+}

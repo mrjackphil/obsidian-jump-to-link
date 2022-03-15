@@ -1,8 +1,8 @@
 import {Editor} from "codemirror";
-import {Callback, LinkHintBase, SourceLinkHint} from "../../types";
+import {Processor, SourceLinkHint} from "../../types";
 import {displaySourcePopovers, getLinkHintLetters, getVisibleLineText} from "../common";
 
-export default class RegexpProcessor {
+export default class RegexpProcessor implements Processor {
     cmEditor: Editor;
     regexp: string;
     alphabet: string;
@@ -13,12 +13,12 @@ export default class RegexpProcessor {
         this.alphabet = alphabet;
     }
 
-    public init(cb: Callback) {
+    public init(): SourceLinkHint[] {
         const [content, offset] = this.getVisibleContent();
         const links = this.getLinks(content, offset);
 
         this.display(links);
-        this.callback(cb, links);
+        return links;
     }
 
     private getVisibleContent(): [string, number] {
@@ -67,10 +67,5 @@ export default class RegexpProcessor {
     private display(links: SourceLinkHint[]): void {
         const { cmEditor } = this
         displaySourcePopovers(cmEditor, links);
-    }
-
-    private callback(fn: Callback, hints: LinkHintBase[]): void {
-        const { cmEditor } = this
-        fn(hints, cmEditor);
     }
 }

@@ -1,4 +1,4 @@
-import {Callback, LinkHintType, PreviewLinkHint} from "../../types";
+import {LinkHintType, PreviewLinkHint} from "../../types";
 import {getLinkHintLetters} from "../common";
 
 export default class PreviewLinkProcessor {
@@ -10,11 +10,11 @@ export default class PreviewLinkProcessor {
         this.alphabet = alphabet;
     }
 
-    public init(cb: Callback) {
+    public init(): PreviewLinkHint[] {
         const { view } = this
         const links = this.getPreviewLinkHints(view);
         PreviewLinkProcessor.displayPreviewPopovers(view, links);
-        cb(links);
+        return links;
     }
 
     private static checkIsPreviewElOnScreen(parent: HTMLElement, el: HTMLElement) {
