@@ -5,12 +5,12 @@ import {displaySourcePopovers, getLinkHintLetters, getVisibleLineText} from "../
 export default class RegexpProcessor implements Processor {
     cmEditor: Editor;
     regexp: string;
-    alphabet: string;
+    letters: string;
 
     constructor(cmEditor: Editor, regexp: string, alphabet: string) {
         this.cmEditor = cmEditor;
         this.regexp = regexp;
-        this.alphabet = alphabet;
+        this.letters = alphabet;
     }
 
     public init(): SourceLinkHint[] {
@@ -29,7 +29,7 @@ export default class RegexpProcessor implements Processor {
     }
 
     private getLinks(content: string, offset: number): SourceLinkHint[] {
-        const { regexp, alphabet } = this;
+        const { regexp, letters } = this;
         const regExUrl = new RegExp(regexp, 'g');
 
         let linksWithIndex: {
@@ -49,7 +49,7 @@ export default class RegexpProcessor implements Processor {
             });
         }
 
-        const linkHintLetters = getLinkHintLetters(alphabet, linksWithIndex.length);
+        const linkHintLetters = getLinkHintLetters(letters, linksWithIndex.length);
 
         const linksWithLetter: SourceLinkHint[] = [];
         linksWithIndex

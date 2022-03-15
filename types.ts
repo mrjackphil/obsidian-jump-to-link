@@ -22,5 +22,7 @@ export class Settings {
 }
 
 export class Processor {
+	letters: string;
+
 	public init: () => LinkHintBase[];
 }
