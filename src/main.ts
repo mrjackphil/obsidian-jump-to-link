@@ -1,9 +1,9 @@
 import {App, Plugin, PluginSettingTab, Setting, View} from 'obsidian';
 import { Editor } from 'codemirror';
 import { LinkHintBase, Settings, SourceLinkHint } from 'types';
-import {displaySourcePopovers, getLinkHintLetters, getVisibleLineText} from "./utils/common";
 import RegexpProcessor from "./processors/RegexpProcessor";
 import PreviewLinkProcessor from "./processors/PreviewLinkProcessor";
+import SourceLinkProcessor from "./processors/SourceLinkProcessor";
 
 enum VIEW_MODE {
     SOURCE,
@@ -25,7 +25,7 @@ export default class JumpToLink extends Plugin {
             id: 'activate-jump-to-link',
             name: 'Jump to Link',
             callback: this.action.bind(this, 'link'),
-            hotkeys: [{modifiers: ['Ctrl'], key: '\''}]
+            hotkeys: [{modifiers: ['Ctrl'], key: `'`}],
         });
 
         this.addCommand({
@@ -74,12 +74,13 @@ export default class JumpToLink extends Plugin {
         switch (mode) {
             case VIEW_MODE.SOURCE:
                 const cmEditor: Editor = (currentView as any).sourceMode.cmEditor;
-                this.manageSourceLinkHints(cmEditor);
+                const sourceLinkHints = new SourceLinkProcessor(cmEditor, letters).init();
+                this.activateLinkHints(sourceLinkHints, cmEditor);
                 return
             case VIEW_MODE.PREVIEW:
                 const previewViewEl: HTMLElement = (currentView as any).previewMode.containerEl.querySelector('div.markdown-preview-view');
-                const links = new PreviewLinkProcessor(previewViewEl, letters).init();
-                this.activateLinkHints(links);
+                const previewLinkHints = new PreviewLinkProcessor(previewViewEl, letters).init();
+                this.activateLinkHints(previewLinkHints);
                 return
             case VIEW_MODE.LIVE_PREVIEW:
                 return
@@ -100,14 +101,6 @@ export default class JumpToLink extends Plugin {
         const links = new RegexpProcessor(cmEditor, jumpToAnywhereRegex, letters).init();
         this.activateLinkHints(links, cmEditor);
     }
-
-    manageSourceLinkHints = (cmEditor: Editor): void => {
-        const linkHints = this.getSourceLinkHints(cmEditor)
-        if (linkHints.length) {
-            displaySourcePopovers(cmEditor, linkHints);
-            this.activateLinkHints(linkHints, cmEditor);
-        }
-    };
 
     activateLinkHints = (linkHints: LinkHintBase[], cmEditor?: Editor): void => {
         const linkHintMap: { [letter: string]: LinkHintBase } = {};
@@ -173,54 +166,6 @@ export default class JumpToLink extends Plugin {
         document.addEventListener('click', removePopovers)
         document.addEventListener('keydown', handleKeyDown);
         this.isLinkHintActive = true;
-    }
-
-    getSourceLinkHints = (cmEditor: Editor): SourceLinkHint[] => {
-        const { settings: { letters } } = this
-        // expecting either [[Link]] or [[Link|Title]]
-        const regExInternal = /\[\[(.+?)(\|.+?)?]]/g;
-        // expecting [Title](../example.md)
-        const regExMdInternal = /\[.+?]\(((\.\.|\w|\d).+?)\)/g;
-        // expecting [Title](file://link) or [Title](https://link)
-        const regExExternal = /\[.+?]\(((https?:|file:).+?)\)/g;
-        // expecting http://hogehoge or https://hogehoge
-        const regExUrl = /(?<= |\n|^)(https?:\/\/[^ \n]+)/g;
-
-        const { indOffset, strs } = getVisibleLineText(cmEditor);
-
-        let linksWithIndex: { index: number, type: 'internal' | 'external', linkText: string }[] = [];
-        let regExResult;
-
-        while(regExResult = regExInternal.exec(strs)) {
-            const linkText = regExResult[1];
-            linksWithIndex.push({ index: regExResult.index + indOffset, type: 'internal', linkText });
-        }
-
-        while(regExResult = regExMdInternal.exec(strs)) {
-            const linkText = regExResult[1];
-            linksWithIndex.push({ index: regExResult.index + indOffset, type: 'internal', linkText });
-        }
-
-        while(regExResult = regExExternal.exec(strs)) {
-            const linkText = regExResult[1];
-            linksWithIndex.push({ index: regExResult.index + indOffset, type: 'external', linkText })
-        }
-
-        while(regExResult = regExUrl.exec(strs)) {
-            const linkText = regExResult[1];
-            linksWithIndex.push({ index: regExResult.index + indOffset, type: 'external', linkText })
-        }
-
-        const linkHintLetters = getLinkHintLetters(letters, linksWithIndex.length);
-
-        const linksWithLetter: SourceLinkHint[] = [];
-        linksWithIndex
-            .sort((x,y) => x.index - y.index)
-            .forEach((linkHint, i) => {
-                linksWithLetter.push({ letter: linkHintLetters[i], ...linkHint});
-            });
-
-        return linksWithLetter.filter(link => link.letter);
     }
 }
 
