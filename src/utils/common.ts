@@ -62,7 +62,7 @@ export function getMDHintLinks(content: string, offset: number, letters: string)
     // expecting [Title](file://link) or [Title](https://link)
     const regExExternal = /\[.+?]\(((https?:|file:).+?)\)/g;
     // expecting http://hogehoge or https://hogehoge
-    const regExUrl = /(?<= |\n|^)(https?:\/\/[^ \n]+)/g;
+    const regExUrl = /( |\n|^)(https?:\/\/[^ \n]+)/g;
 
     let linksWithIndex: { index: number, type: 'internal' | 'external', linkText: string }[] = [];
     let regExResult;
@@ -83,8 +83,8 @@ export function getMDHintLinks(content: string, offset: number, letters: string)
     }
 
     while(regExResult = regExUrl.exec(content)) {
-        const linkText = regExResult[1];
-        linksWithIndex.push({ index: regExResult.index + offset, type: 'external', linkText })
+        const linkText = regExResult[2];
+        linksWithIndex.push({ index: regExResult.index + offset + 1, type: 'external', linkText })
     }
 
     const linkHintLetters = getLinkHintLetters(letters, linksWithIndex.length);
