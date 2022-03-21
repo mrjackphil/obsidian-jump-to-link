@@ -147,8 +147,7 @@ export default class JumpToLink extends Plugin {
                 // not sure why the second argument in openLinkText is necessary.
                 this.app.workspace.openLinkText(decodeURI(link.linkText), '', newLeaf, {active: true});
             } else if (link.type === 'external') {
-                // todo
-                require('electron').shell.openExternal(link.linkText);
+                window.open(link.linkText);
             } else {
                 const editor = cmEditor;
                 if (editor instanceof EditorView) {
