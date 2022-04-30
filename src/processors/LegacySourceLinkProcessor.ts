@@ -2,7 +2,7 @@ import {Processor, SourceLinkHint} from "../../types";
 import {Editor} from "codemirror";
 import {displaySourcePopovers, getMDHintLinks, getVisibleLineText} from "../utils/common";
 
-export default class SourceLinkProcessor implements Processor {
+export default class LegacySourceLinkProcessor implements Processor {
     cmEditor: Editor;
     letters: string;
 

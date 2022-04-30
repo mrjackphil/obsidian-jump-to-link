@@ -2,7 +2,7 @@ import {Processor, SourceLinkHint} from "../../types";
 import {EditorView} from "@codemirror/view";
 import {getMDHintLinks} from "../utils/common";
 
-export default class LivePreviewLinkProcessor implements Processor {
+export default class CM6LinkProcessor implements Processor {
     cmEditor: EditorView;
     letters: string;
 

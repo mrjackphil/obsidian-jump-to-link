@@ -3,7 +3,7 @@ import {Processor, SourceLinkHint} from "../../types";
 import {displaySourcePopovers, getVisibleLineText} from "../utils/common";
 import {extractRegexpBlocks} from "../utils/regexp";
 
-export default class RegexpProcessor implements Processor {
+export default class LegacyRegexpProcessor implements Processor {
     cmEditor: Editor;
     regexp: string;
     letters: string;

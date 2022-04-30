@@ -1,19 +1,20 @@
 import {App, Plugin, PluginSettingTab, Setting, View} from 'obsidian';
 import {Editor} from 'codemirror';
-import {LinkHintBase, Settings, SourceLinkHint} from 'types';
-import RegexpProcessor from "./processors/RegexpProcessor";
-import PreviewLinkProcessor from "./processors/PreviewLinkProcessor";
-import SourceLinkProcessor from "./processors/SourceLinkProcessor";
-import LivePreviewLinkProcessor from "./processors/LivePreviewLinkProcessor";
-import {EditorView, ViewPlugin} from "@codemirror/view";
-import {createViewPluginClass, MarkPlugin} from "./cm6-widget/MarkPlugin";
 import {EditorSelection} from "@codemirror/state";
-import LivePreviewRegexProcessor from "./processors/LivePreviewRegexProcessor";
+import {EditorView, ViewPlugin} from "@codemirror/view";
+import {LinkHintBase, Settings, SourceLinkHint} from 'types';
+import {createViewPluginClass, MarkPlugin} from "./cm6-widget/MarkPlugin";
+
+import CM6LinkProcessor from "./processors/CM6LinkProcessor";
+import CM6RegexProcessor from "./processors/CM6RegexProcessor";
+import LegacyRegexpProcessor from "./processors/LegacyRegexpProcessor";
+import LegacySourceLinkProcessor from "./processors/LegacySourceLinkProcessor";
+import PreviewLinkProcessor from "./processors/PreviewLinkProcessor";
 
 enum VIEW_MODE {
-    SOURCE,
+    LEGACY,
     PREVIEW,
-    LIVE_PREVIEW
+    CM6
 }
 
 export default class JumpToLink extends Plugin {
@@ -70,15 +71,18 @@ export default class JumpToLink extends Plugin {
     }
 
     getMode(currentView: View): VIEW_MODE {
+        // @ts-ignore
+        const isLegacy = this.app.vault.getConfig("legacyEditor")
+
         if (currentView.getState().mode === 'preview') {
             return VIEW_MODE.PREVIEW;
-        } else if (Array.isArray((<{ editMode?: { livePreviewPlugin: any[] } }>currentView)?.editMode?.livePreviewPlugin)) {
-            return VIEW_MODE.LIVE_PREVIEW;
+        } else if (!isLegacy) {
+            return VIEW_MODE.CM6;
         } else if (currentView.getState().mode === 'source') {
-            return VIEW_MODE.SOURCE;
+            return VIEW_MODE.LEGACY;
         }
 
-        return VIEW_MODE.SOURCE;
+        return VIEW_MODE.LEGACY;
     }
 
     handleJumpToLink = () => {
@@ -88,9 +92,9 @@ export default class JumpToLink extends Plugin {
         const mode = this.getMode(currentView);
 
         switch (mode) {
-            case VIEW_MODE.SOURCE:
+            case VIEW_MODE.LEGACY:
                 const cmEditor: Editor = (currentView as any).sourceMode.cmEditor;
-                const sourceLinkHints = new SourceLinkProcessor(cmEditor, letters).init();
+                const sourceLinkHints = new LegacySourceLinkProcessor(cmEditor, letters).init();
                 this.handleActions(sourceLinkHints, cmEditor);
                 break;
             case VIEW_MODE.PREVIEW:
@@ -98,9 +102,9 @@ export default class JumpToLink extends Plugin {
                 const previewLinkHints = new PreviewLinkProcessor(previewViewEl, letters).init();
                 this.handleActions(previewLinkHints);
                 break;
-            case VIEW_MODE.LIVE_PREVIEW:
+            case VIEW_MODE.CM6:
                 const cm6Editor: EditorView = (<{ editor?: { cm: EditorView } }>currentView).editor.cm;
-                const livePreviewLinks = new LivePreviewLinkProcessor(cm6Editor, letters).init();
+                const livePreviewLinks = new CM6LinkProcessor(cm6Editor, letters).init();
                 this.markPlugin.setLinks(livePreviewLinks);
                 this.app.workspace.updateOptions();
                 this.handleActions(livePreviewLinks);
@@ -114,18 +118,18 @@ export default class JumpToLink extends Plugin {
         const mode = this.getMode(currentView);
 
         switch (mode) {
-            case VIEW_MODE.LIVE_PREVIEW:
+            case VIEW_MODE.CM6:
                 const cm6Editor: EditorView = (<{ editor?: { cm: EditorView } }>currentView).editor.cm;
-                const livePreviewLinks = new LivePreviewRegexProcessor(cm6Editor, letters, jumpToAnywhereRegex).init();
+                const livePreviewLinks = new CM6RegexProcessor(cm6Editor, letters, jumpToAnywhereRegex).init();
                 this.markPlugin.setLinks(livePreviewLinks);
                 this.app.workspace.updateOptions();
                 this.handleActions(livePreviewLinks, cm6Editor);
                 break;
             case VIEW_MODE.PREVIEW:
                 break;
-            case VIEW_MODE.SOURCE:
+            case VIEW_MODE.LEGACY:
                 const cmEditor: Editor = (currentView as any).sourceMode.cmEditor;
-                const links = new RegexpProcessor(cmEditor, jumpToAnywhereRegex, letters).init();
+                const links = new LegacyRegexpProcessor(cmEditor, jumpToAnywhereRegex, letters).init();
                 this.handleActions(links, cmEditor);
                 break;
             default:

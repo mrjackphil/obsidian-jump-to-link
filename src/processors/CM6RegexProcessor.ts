@@ -1,9 +1,9 @@
-import LivePreviewLinkProcessor from "./LivePreviewLinkProcessor";
+import CM6LinkProcessor from "./CM6LinkProcessor";
 import {Processor} from "../../types";
 import {EditorView} from "@codemirror/view";
 import {extractRegexpBlocks} from "../utils/regexp";
 
-export default class LivePreviewRegexProcessor extends LivePreviewLinkProcessor implements Processor {
+export default class CM6RegexProcessor extends CM6LinkProcessor implements Processor {
     regexp: string;
     constructor(editor: EditorView, alphabet: string, regexp: string) {
         super(editor, alphabet);
