@@ -1,7 +1,7 @@
 import {LinkHintBase} from "../../types";
 
 export function displayModal(linkHints: LinkHintBase[]): void {
-    const modalEl = document.createElement('div');
+    const modalEl = activeDocument.createElement('div');
     modalEl.innerHTML =  `
 			<div class="modal-container" id="jl-modal">
 				<div class="modal-bg"></div>
@@ -13,10 +13,10 @@ export function displayModal(linkHints: LinkHintBase[]): void {
 			</div>
 		`;
     modalEl.querySelector('.modal-close-button').addEventListener('click', modalEl.remove);
-    document.body.appendChild(modalEl);
+    activeDocument.body.appendChild(modalEl);
 
     const linkEl = (content: string) => {
-        const el = document.createElement('div');
+        const el = activeDocument.createElement('div');
         el.innerHTML = content;
         return el;
     };

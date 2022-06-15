@@ -100,7 +100,7 @@ export function getMDHintLinks(content: string, offset: number, letters: string)
 }
 
 export function createWidgetElement(content: string) {
-    const linkHintEl = document.createElement('div');
+    const linkHintEl = activeDocument.createElement('div');
     linkHintEl.classList.add('jl');
     linkHintEl.classList.add('popover');
     linkHintEl.innerHTML = content;

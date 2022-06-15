@@ -10,10 +10,10 @@ export class MarkWidget extends WidgetType {
     }
 
     toDOM() {
-        const mark = document.createElement("span");
+        const mark = activeDocument.createElement("span");
         mark.innerText = this.mark;
 
-        const wrapper = document.createElement("div");
+        const wrapper = activeDocument.createElement("div");
         wrapper.style.display = "inline-block";
         wrapper.style.position = "absolute";
         wrapper.classList.add('jl');
