@@ -1,4 +1,4 @@
-import {App, Plugin, PluginSettingTab, Setting, View} from 'obsidian';
+import {App, MarkdownView, Plugin, PluginSettingTab, Setting, View} from 'obsidian';
 import {Editor} from 'codemirror';
 import {EditorSelection} from "@codemirror/state";
 import {EditorView, ViewPlugin} from "@codemirror/view";
@@ -12,9 +12,9 @@ import LegacySourceLinkProcessor from "./processors/LegacySourceLinkProcessor";
 import PreviewLinkProcessor from "./processors/PreviewLinkProcessor";
 
 enum VIEW_MODE {
-    LEGACY,
+    SOURCE,
     PREVIEW,
-    CM6
+    LEGACY
 }
 
 export default class JumpToLink extends Plugin {
@@ -49,13 +49,20 @@ export default class JumpToLink extends Plugin {
             callback: this.action.bind(this, 'regexp'),
             hotkeys: [{modifiers: ["Ctrl"], key: ";"}],
         });
+
+        this.addCommand({
+            id: "activate-lightspeed-jump",
+            name: "Lightspeed Jump",
+            callback: this.action.bind(this, 'lightspeed'),
+            hotkeys: [],
+        });
     }
 
     onunload() {
         console.log('unloading jump to links plugin');
     }
 
-    action(type: 'link' | 'regexp') {
+    action(type: 'link' | 'regexp' | 'lightspeed') {
         if (this.isLinkHintActive) {
             return;
         }
@@ -67,6 +74,9 @@ export default class JumpToLink extends Plugin {
             case "regexp":
                 this.handleJumpToRegex();
                 return
+            case "lightspeed":
+                this.handleLightspeedJump();
+                return
         }
     }
 
@@ -76,19 +86,18 @@ export default class JumpToLink extends Plugin {
 
         if (currentView.getState().mode === 'preview') {
             return VIEW_MODE.PREVIEW;
-        } else if (!isLegacy) {
-            return VIEW_MODE.CM6;
-        } else if (currentView.getState().mode === 'source') {
+        } else if (isLegacy) {
             return VIEW_MODE.LEGACY;
+        } else if (currentView.getState().mode === 'source') {
+            return VIEW_MODE.SOURCE;
         }
 
-        return VIEW_MODE.LEGACY;
     }
 
     handleJumpToLink = () => {
         const {settings: {letters}, app} = this
 
-        const currentView = app.workspace.activeLeaf.view;
+        const currentView = app.workspace.getLeaf(false).view;
         const mode = this.getMode(currentView);
 
         switch (mode) {
@@ -102,7 +111,7 @@ export default class JumpToLink extends Plugin {
                 const previewLinkHints = new PreviewLinkProcessor(previewViewEl, letters).init();
                 this.handleActions(previewLinkHints);
                 break;
-            case VIEW_MODE.CM6:
+            case VIEW_MODE.SOURCE:
                 const cm6Editor: EditorView = (<{ editor?: { cm: EditorView } }>currentView).editor.cm;
                 const livePreviewLinks = new CM6LinkProcessor(cm6Editor, letters).init();
                 this.markPlugin.setLinks(livePreviewLinks);
@@ -112,15 +121,16 @@ export default class JumpToLink extends Plugin {
         }
     }
 
-    handleJumpToRegex = () => {
+    handleJumpToRegex = (stringToSearch?: string) => {
         const {app, settings: {letters, jumpToAnywhereRegex}} = this
-        const currentView = app.workspace.activeLeaf.view;
+        const currentView = app.workspace.getLeaf(false).view
         const mode = this.getMode(currentView);
+        const whatToLookAt = stringToSearch || jumpToAnywhereRegex;
 
         switch (mode) {
-            case VIEW_MODE.CM6:
+            case VIEW_MODE.SOURCE:
                 const cm6Editor: EditorView = (<{ editor?: { cm: EditorView } }>currentView).editor.cm;
-                const livePreviewLinks = new CM6RegexProcessor(cm6Editor, letters, jumpToAnywhereRegex).init();
+                const livePreviewLinks = new CM6RegexProcessor(cm6Editor, letters, whatToLookAt).init();
                 this.markPlugin.setLinks(livePreviewLinks);
                 this.app.workspace.updateOptions();
                 this.handleActions(livePreviewLinks, cm6Editor);
@@ -129,13 +139,53 @@ export default class JumpToLink extends Plugin {
                 break;
             case VIEW_MODE.LEGACY:
                 const cmEditor: Editor = (currentView as any).sourceMode.cmEditor;
-                const links = new LegacyRegexpProcessor(cmEditor, jumpToAnywhereRegex, letters).init();
+                const links = new LegacyRegexpProcessor(cmEditor, whatToLookAt, letters).init();
                 this.handleActions(links, cmEditor);
                 break;
             default:
                 break;
         }
 
+    }
+    // adapted from: https://github.com/mrjackphil/obsidian-jump-to-link/issues/35#issuecomment-1085905668
+    handleLightspeedJump() {
+        // get all text color
+        const { contentEl } = app.workspace.getActiveViewOfType(MarkdownView)
+        if (!contentEl) {return}
+        const contentContainerColor = contentEl.getElementsByClassName("cm-contentContainer");
+        const originalColor = contentContainerColor[0].style.color;
+        // change all text color to gray
+        contentContainerColor[0].style.color = 'var(--jump-to-link-lightspeed-color)';
+
+        const keyArray = []
+        const grabKey = (event) => {
+            event.preventDefault();
+            // handle Escape to reject the mode
+            if (event.key === 'Escape') {
+                document.removeEventListener("keydown", grabKey, { capture: true })
+            }
+
+            // test if keypress is capitalized
+            if (/^[a-z]$/i.test(event.key)) {
+                const isCapital = event.shiftKey;
+                if (isCapital) {
+                    // capture uppercase
+                    keyArray.push((event.key).toUpperCase());
+                } else {
+                    // capture lowercase
+                    keyArray.push(event.key);
+                }
+            }
+
+            // stop when length of array is equal to 2
+            if (keyArray.length === 2) {
+                this.handleJumpToRegex("\\b" + keyArray.join(""));
+                // removing eventListener after proceeded
+                document.removeEventListener("keydown", grabKey, { capture: true })
+                contentContainerColor[0].style.color = originalColor;
+            }
+        }
+        document.addEventListener('keydown', grabKey, { capture: true });
     }
 
     handleActions = (linkHints: LinkHintBase[], cmEditor?: Editor | EditorView): void => {
