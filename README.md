@@ -26,6 +26,19 @@ Quickly navigate between links, or jump to any word on the page using hotkeys.
   - These settings ensure that all 26 letters are available for jumping in documents with large amounts of text.
   - If there are more matches than available letters, the label will show `undefined` and it will not be possible to jump there.
 
+### How to use Lightspeed
+
+Lightspeed is originally a [vim plugin](https://github.com/ggandor/lightspeed.nvim) similar to vim-sneak or easymotion. See this [issue](https://github.com/mrjackphil/obsidian-jump-to-link/issues/35) for videos.
+
+You can either assign a hotkey, or use it in combination with the [Obsidian vimrc plugin](https://github.com/esm7/obsidian-vimrc-support):
+
+```vimrc
+exmap jumpToLink obcommand mrj-jump-to-link:activate-lightspeed-jump
+nmap gs :jumpToLink
+```
+
+The idea and original code is [from @kohane27](https://github.com/mrjackphil/obsidian-jump-to-link/issues/35#issuecomment-1085905668).
+
 ### How to install the plugin
 
 Install plugin from the Community Plugins section.
