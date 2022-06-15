@@ -3,7 +3,7 @@ import {Editor} from 'codemirror';
 import {EditorSelection} from "@codemirror/state";
 import {EditorView, ViewPlugin} from "@codemirror/view";
 import {LinkHintBase, Settings, SourceLinkHint} from 'types';
-import {createViewPluginClass, MarkPlugin} from "./cm6-widget/MarkPlugin";
+import {MarkPlugin} from "./cm6-widget/MarkPlugin";
 
 import CM6LinkProcessor from "./processors/CM6LinkProcessor";
 import CM6RegexProcessor from "./processors/CM6RegexProcessor";
@@ -21,7 +21,7 @@ export default class JumpToLink extends Plugin {
     isLinkHintActive: boolean = false;
     settings: Settings;
     prefixInfo: { prefix: string, shiftKey: boolean } | undefined = undefined;
-    markPlugin: MarkPlugin
+    //markPlugin: MarkPlugin
     markViewPlugin: ViewPlugin<any>
 
     async onload() {
@@ -29,9 +29,7 @@ export default class JumpToLink extends Plugin {
 
         this.addSettingTab(new SettingTab(this.app, this));
 
-        const markPlugin = this.markPlugin = new MarkPlugin([]);
-
-        const markViewPlugin = this.markViewPlugin = ViewPlugin.fromClass(createViewPluginClass(markPlugin), {
+        const markViewPlugin = this.markViewPlugin = ViewPlugin.fromClass(MarkPlugin, {
             decorations: v => v.decorations
         });
         this.registerEditorExtension([markViewPlugin])
@@ -116,7 +114,7 @@ export default class JumpToLink extends Plugin {
             case VIEW_MODE.SOURCE:
                 const cm6Editor: EditorView = (<{ editor?: { cm: EditorView } }>currentView).editor.cm;
                 const livePreviewLinks = new CM6LinkProcessor(cm6Editor, letters).init();
-                this.markPlugin.setLinks(livePreviewLinks);
+                cm6Editor.plugin(this.markViewPlugin).setLinks(livePreviewLinks);
                 this.app.workspace.updateOptions();
                 this.handleActions(livePreviewLinks, contentEl);
                 break;
@@ -135,7 +133,7 @@ export default class JumpToLink extends Plugin {
             case VIEW_MODE.SOURCE:
                 const cm6Editor: EditorView = (<{ editor?: { cm: EditorView } }>currentView).editor.cm;
                 const livePreviewLinks = new CM6RegexProcessor(cm6Editor, letters, whatToLookAt).init();
-                this.markPlugin.setLinks(livePreviewLinks);
+                cm6Editor.plugin(this.markViewPlugin).setLinks(livePreviewLinks);
                 this.app.workspace.updateOptions();
                 this.handleActions(livePreviewLinks, contentEl, cm6Editor);
                 break;
@@ -222,7 +220,9 @@ export default class JumpToLink extends Plugin {
             currentView.querySelectorAll('.jl.popover').forEach(e => e.remove());
             currentView.querySelectorAll('#jl-modal').forEach(e => e.remove());
             this.prefixInfo = undefined;
-            this.markPlugin.clean();
+            const view = app.workspace.getLeaf(false).view
+            const cm6Editor: EditorView = (<{ editor?: { cm: EditorView } }>view).editor.cm;
+            cm6Editor.plugin(this.markViewPlugin).clean();
             this.app.workspace.updateOptions();
             this.isLinkHintActive = false;
         }
