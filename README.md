@@ -39,6 +39,14 @@ nmap gs :jumpToLink
 
 The idea and original code is [from @kohane27](https://github.com/mrjackphil/obsidian-jump-to-link/issues/35#issuecomment-1085905668).
 
+The look of it when invoked can be modified with CSS. By default, it is:
+
+```css
+.theme-dark, .theme-light {
+  --jump-to-link-lightspeed-color: var(--text-muted);
+}
+```
+
 ### How to install the plugin
 
 Install plugin from the Community Plugins section.
