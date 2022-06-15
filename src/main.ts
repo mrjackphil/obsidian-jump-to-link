@@ -165,6 +165,7 @@ export default class JumpToLink extends Plugin {
             // handle Escape to reject the mode
             if (event.key === 'Escape') {
                 contentEl.removeEventListener("keydown", grabKey, { capture: true })
+                contentContainerColor[0].style.color = originalColor;
             }
 
             // test if keypress is capitalized
