@@ -100,23 +100,25 @@ export default class JumpToLink extends Plugin {
         const currentView = app.workspace.getLeaf(false).view;
         const mode = this.getMode(currentView);
 
+        const { contentEl } = app.workspace.getActiveViewOfType(MarkdownView)
+
         switch (mode) {
             case VIEW_MODE.LEGACY:
                 const cmEditor: Editor = (currentView as any).sourceMode.cmEditor;
                 const sourceLinkHints = new LegacySourceLinkProcessor(cmEditor, letters).init();
-                this.handleActions(sourceLinkHints, cmEditor);
+                this.handleActions(sourceLinkHints, contentEl, cmEditor);
                 break;
             case VIEW_MODE.PREVIEW:
                 const previewViewEl: HTMLElement = (currentView as any).previewMode.containerEl.querySelector('div.markdown-preview-view');
                 const previewLinkHints = new PreviewLinkProcessor(previewViewEl, letters).init();
-                this.handleActions(previewLinkHints);
+                this.handleActions(previewLinkHints, contentEl);
                 break;
             case VIEW_MODE.SOURCE:
                 const cm6Editor: EditorView = (<{ editor?: { cm: EditorView } }>currentView).editor.cm;
                 const livePreviewLinks = new CM6LinkProcessor(cm6Editor, letters).init();
                 this.markPlugin.setLinks(livePreviewLinks);
                 this.app.workspace.updateOptions();
-                this.handleActions(livePreviewLinks);
+                this.handleActions(livePreviewLinks, contentEl);
                 break;
         }
     }
@@ -127,20 +129,22 @@ export default class JumpToLink extends Plugin {
         const mode = this.getMode(currentView);
         const whatToLookAt = stringToSearch || jumpToAnywhereRegex;
 
+        const { contentEl } = app.workspace.getActiveViewOfType(MarkdownView)
+
         switch (mode) {
             case VIEW_MODE.SOURCE:
                 const cm6Editor: EditorView = (<{ editor?: { cm: EditorView } }>currentView).editor.cm;
                 const livePreviewLinks = new CM6RegexProcessor(cm6Editor, letters, whatToLookAt).init();
                 this.markPlugin.setLinks(livePreviewLinks);
                 this.app.workspace.updateOptions();
-                this.handleActions(livePreviewLinks, cm6Editor);
+                this.handleActions(livePreviewLinks, contentEl, cm6Editor);
                 break;
             case VIEW_MODE.PREVIEW:
                 break;
             case VIEW_MODE.LEGACY:
                 const cmEditor: Editor = (currentView as any).sourceMode.cmEditor;
                 const links = new LegacyRegexpProcessor(cmEditor, whatToLookAt, letters).init();
-                this.handleActions(links, cmEditor);
+                this.handleActions(links, contentEl, cmEditor);
                 break;
             default:
                 break;
@@ -162,7 +166,7 @@ export default class JumpToLink extends Plugin {
             event.preventDefault();
             // handle Escape to reject the mode
             if (event.key === 'Escape') {
-                document.removeEventListener("keydown", grabKey, { capture: true })
+                contentEl.removeEventListener("keydown", grabKey, { capture: true })
             }
 
             // test if keypress is capitalized
@@ -181,14 +185,14 @@ export default class JumpToLink extends Plugin {
             if (keyArray.length === 2) {
                 this.handleJumpToRegex("\\b" + keyArray.join(""));
                 // removing eventListener after proceeded
-                document.removeEventListener("keydown", grabKey, { capture: true })
+                contentEl.removeEventListener("keydown", grabKey, { capture: true })
                 contentContainerColor[0].style.color = originalColor;
             }
         }
-        document.addEventListener('keydown', grabKey, { capture: true });
+        contentEl.addEventListener('keydown', grabKey, { capture: true });
     }
 
-    handleActions = (linkHints: LinkHintBase[], cmEditor?: Editor | EditorView): void => {
+    handleActions = (linkHints: LinkHintBase[], currentView: HTMLElement, cmEditor?: Editor | EditorView): void => {
         if (!linkHints.length) {
             return;
         }
@@ -214,9 +218,9 @@ export default class JumpToLink extends Plugin {
         }
 
         const removePopovers = () => {
-            document.removeEventListener('click', removePopovers)
-            document.querySelectorAll('.jl.popover').forEach(e => e.remove());
-            document.querySelectorAll('#jl-modal').forEach(e => e.remove());
+            currentView.removeEventListener('click', removePopovers)
+            currentView.querySelectorAll('.jl.popover').forEach(e => e.remove());
+            currentView.querySelectorAll('#jl-modal').forEach(e => e.remove());
             this.prefixInfo = undefined;
             this.markPlugin.clean();
             this.app.workspace.updateOptions();
@@ -255,12 +259,12 @@ export default class JumpToLink extends Plugin {
 
             linkHint && handleHotkey(newLeaf, linkHint);
 
-            document.removeEventListener('keydown', handleKeyDown, { capture: true });
+            currentView.removeEventListener('keydown', handleKeyDown, { capture: true });
             removePopovers();
         };
 
-        document.addEventListener('click', removePopovers)
-        document.addEventListener('keydown', handleKeyDown, { capture: true });
+        currentView.addEventListener('click', removePopovers)
+        currentView.addEventListener('keydown', handleKeyDown, { capture: true });
         this.isLinkHintActive = true;
     }
 }
