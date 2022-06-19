@@ -47,6 +47,8 @@ The look of it when invoked can be modified with CSS. By default, it is:
 }
 ```
 
+Lightspeed is only supported in the new Codemirror 6 editor.
+
 ### How to install the plugin
 
 Install plugin from the Community Plugins section.

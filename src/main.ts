@@ -1,4 +1,4 @@
-import {App, MarkdownView, Plugin, PluginSettingTab, Setting, View} from 'obsidian';
+import {App, MarkdownView, Notice, Plugin, PluginSettingTab, Setting, View} from 'obsidian';
 import {Editor} from 'codemirror';
 import {EditorSelection} from "@codemirror/state";
 import {EditorView, ViewPlugin} from "@codemirror/view";
@@ -154,6 +154,7 @@ export default class JumpToLink extends Plugin {
         // get all text color
         const { contentEl } = app.workspace.getActiveViewOfType(MarkdownView);
         if (!contentEl) {return}
+        // this element doesn't exist in cm5/has a different class, so lightspeed will not work in cm5
         const contentContainerColor = contentEl.getElementsByClassName("cm-contentContainer");
         const originalColor = (contentContainerColor[0] as HTMLElement).style.color;
         // change all text color to gray
