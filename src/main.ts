@@ -202,8 +202,11 @@ export default class JumpToLink extends Plugin {
 
         const handleHotkey = (newLeaf: boolean, link: SourceLinkHint | LinkHintBase) => {
             if (link.type === 'internal') {
-                // not sure why the second argument in openLinkText is necessary.
-                this.app.workspace.openLinkText(decodeURI(link.linkText), '', newLeaf, {active: true});
+                const file = this.app.workspace.getActiveFile()
+                if (file) {
+                    // the second argument is for the link resolution
+                    this.app.workspace.openLinkText(decodeURI(link.linkText), file.path, newLeaf, {active: true});
+                }
             } else if (link.type === 'external') {
                 window.open(link.linkText);
             } else {
