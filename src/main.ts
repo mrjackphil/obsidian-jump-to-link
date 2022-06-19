@@ -121,6 +121,10 @@ export default class JumpToLink extends Plugin {
         }
     }
 
+    /*
+    *  caseSensitive is only for lightspeed and shall not affect jumpToAnywhere, so it is true
+    *  by default
+    */
     handleJumpToRegex = (stringToSearch?: string, caseSensitive: boolean = true) => {
         const {app, settings: {letters, jumpToAnywhereRegex}} = this
         const currentView = app.workspace.getLeaf(false).view
