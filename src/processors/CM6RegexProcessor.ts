@@ -5,14 +5,16 @@ import {extractRegexpBlocks} from "../utils/regexp";
 
 export default class CM6RegexProcessor extends CM6LinkProcessor implements Processor {
     regexp: string;
-    constructor(editor: EditorView, alphabet: string, regexp: string) {
+    caseSensitive: boolean;
+    constructor(editor: EditorView, alphabet: string, regexp: string, caseSensitive: boolean) {
         super(editor, alphabet);
         this.regexp = regexp;
+        this.caseSensitive = caseSensitive;
     }
 
     init() {
         const { letters, regexp } = this;
         const { index, content } = this.getVisibleLines();
-        return extractRegexpBlocks(content, index, regexp, letters);
+        return extractRegexpBlocks(content, index, regexp, letters, this.caseSensitive);
     }
 }

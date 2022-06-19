@@ -121,7 +121,7 @@ export default class JumpToLink extends Plugin {
         }
     }
 
-    handleJumpToRegex = (stringToSearch?: string) => {
+    handleJumpToRegex = (stringToSearch?: string, caseSensitive: boolean = true) => {
         const {app, settings: {letters, jumpToAnywhereRegex}} = this
         const currentView = app.workspace.getLeaf(false).view
         const mode = this.getMode(currentView);
@@ -132,7 +132,7 @@ export default class JumpToLink extends Plugin {
         switch (mode) {
             case VIEW_MODE.SOURCE:
                 const cm6Editor: EditorView = (<{ editor?: { cm: EditorView } }>currentView).editor.cm;
-                const livePreviewLinks = new CM6RegexProcessor(cm6Editor, letters, whatToLookAt).init();
+                const livePreviewLinks = new CM6RegexProcessor(cm6Editor, letters, whatToLookAt, caseSensitive).init();
                 cm6Editor.plugin(this.markViewPlugin).setLinks(livePreviewLinks);
                 this.app.workspace.updateOptions();
                 this.handleActions(livePreviewLinks, contentEl, cm6Editor);
@@ -141,7 +141,7 @@ export default class JumpToLink extends Plugin {
                 break;
             case VIEW_MODE.LEGACY:
                 const cmEditor: Editor = (currentView as any).sourceMode.cmEditor;
-                const links = new LegacyRegexpProcessor(cmEditor, whatToLookAt, letters).init();
+                const links = new LegacyRegexpProcessor(cmEditor, whatToLookAt, letters, caseSensitive).init();
                 this.handleActions(links, contentEl, cmEditor);
                 break;
             default:
@@ -152,20 +152,20 @@ export default class JumpToLink extends Plugin {
     // adapted from: https://github.com/mrjackphil/obsidian-jump-to-link/issues/35#issuecomment-1085905668
     handleLightspeedJump() {
         // get all text color
-        const { contentEl } = app.workspace.getActiveViewOfType(MarkdownView)
+        const { contentEl } = app.workspace.getActiveViewOfType(MarkdownView);
         if (!contentEl) {return}
         const contentContainerColor = contentEl.getElementsByClassName("cm-contentContainer");
-        const originalColor = contentContainerColor[0].style.color;
+        const originalColor = (contentContainerColor[0] as HTMLElement).style.color;
         // change all text color to gray
-        contentContainerColor[0].style.color = 'var(--jump-to-link-lightspeed-color)';
+        (contentContainerColor[0] as HTMLElement).style.color = 'var(--jump-to-link-lightspeed-color)';
 
-        const keyArray = []
-        const grabKey = (event) => {
+        const keyArray: string[] = [];
+        const grabKey = (event: KeyboardEvent) => {
             event.preventDefault();
             // handle Escape to reject the mode
             if (event.key === 'Escape') {
-                contentEl.removeEventListener("keydown", grabKey, { capture: true })
-                contentContainerColor[0].style.color = originalColor;
+                contentEl.removeEventListener("keydown", grabKey, { capture: true });
+                (contentContainerColor[0] as HTMLElement).style.color = originalColor;
             }
 
             // test if keypress is capitalized
@@ -182,10 +182,10 @@ export default class JumpToLink extends Plugin {
 
             // stop when length of array is equal to 2
             if (keyArray.length === 2) {
-                this.handleJumpToRegex("\\b" + keyArray.join(""));
+                this.handleJumpToRegex("\\b" + keyArray.join(""), this.settings.lightspeedCaseSensitive);
                 // removing eventListener after proceeded
-                contentEl.removeEventListener("keydown", grabKey, { capture: true })
-                contentContainerColor[0].style.color = originalColor;
+                contentEl.removeEventListener("keydown", grabKey, { capture: true });
+                (contentContainerColor[0] as HTMLElement).style.color = originalColor;
             }
         }
         contentEl.addEventListener('keydown', grabKey, { capture: true });
@@ -325,5 +325,18 @@ class SettingTab extends PluginSettingTab {
                         await this.plugin.saveData(this.plugin.settings);
                     })
             );
+
+        new Setting(containerEl)
+            .setName('Lightspeed regex case sensitivity')
+            .setDesc(
+                'If enabled, the regex for matching will be case sensitive.'
+            )
+            .addToggle((toggle) => {
+                toggle.setValue(this.plugin.settings.lightspeedCaseSensitive)
+                    .onChange(async (state) => {
+                    this.plugin.settings.lightspeedCaseSensitive = state;
+                    await this.plugin.saveData(this.plugin.settings);
+                });
+            });
     }
 }

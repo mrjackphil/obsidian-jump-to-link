@@ -19,6 +19,7 @@ export class Settings {
 	// Defaults as in Vimium extension for browsers
 	letters: string = 'sadfjklewcmpgh';
 	jumpToAnywhereRegex: string = '\\b\\w{3,}\\b';
+	lightspeedCaseSensitive: boolean = false;
 }
 
 export class Processor {
