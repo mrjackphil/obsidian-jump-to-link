@@ -1,8 +1,8 @@
 import {getLinkHintLetters} from "./common";
 import {SourceLinkHint} from "../../types";
 
-export function extractRegexpBlocks(content: string, offset: number, regexp: string, letters: string) {
-    const regExUrl = new RegExp(regexp, 'g');
+export function extractRegexpBlocks(content: string, offset: number, regexp: string, letters: string, caseSensitive: boolean) {
+    const regExUrl = caseSensitive ? new RegExp(regexp, 'g') : new RegExp(regexp, 'ig');
 
     let linksWithIndex: {
         index: number;

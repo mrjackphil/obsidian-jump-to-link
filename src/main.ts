@@ -1,9 +1,9 @@
-import {App, Plugin, PluginSettingTab, Setting, View} from 'obsidian';
+import {App, MarkdownView, Notice, Plugin, PluginSettingTab, Setting, View} from 'obsidian';
 import {Editor} from 'codemirror';
 import {EditorSelection} from "@codemirror/state";
 import {EditorView, ViewPlugin} from "@codemirror/view";
 import {LinkHintBase, Settings, SourceLinkHint} from 'types';
-import {createViewPluginClass, MarkPlugin} from "./cm6-widget/MarkPlugin";
+import {MarkPlugin} from "./cm6-widget/MarkPlugin";
 
 import CM6LinkProcessor from "./processors/CM6LinkProcessor";
 import CM6RegexProcessor from "./processors/CM6RegexProcessor";
@@ -12,16 +12,16 @@ import LegacySourceLinkProcessor from "./processors/LegacySourceLinkProcessor";
 import PreviewLinkProcessor from "./processors/PreviewLinkProcessor";
 
 enum VIEW_MODE {
-    LEGACY,
+    SOURCE,
     PREVIEW,
-    CM6
+    LEGACY
 }
 
 export default class JumpToLink extends Plugin {
     isLinkHintActive: boolean = false;
     settings: Settings;
     prefixInfo: { prefix: string, shiftKey: boolean } | undefined = undefined;
-    markPlugin: MarkPlugin
+    //markPlugin: MarkPlugin
     markViewPlugin: ViewPlugin<any>
 
     async onload() {
@@ -29,9 +29,7 @@ export default class JumpToLink extends Plugin {
 
         this.addSettingTab(new SettingTab(this.app, this));
 
-        const markPlugin = this.markPlugin = new MarkPlugin([]);
-
-        const markViewPlugin = this.markViewPlugin = ViewPlugin.fromClass(createViewPluginClass(markPlugin), {
+        const markViewPlugin = this.markViewPlugin = ViewPlugin.fromClass(MarkPlugin, {
             decorations: v => v.decorations
         });
         this.registerEditorExtension([markViewPlugin])
@@ -49,13 +47,20 @@ export default class JumpToLink extends Plugin {
             callback: this.action.bind(this, 'regexp'),
             hotkeys: [{modifiers: ["Ctrl"], key: ";"}],
         });
+
+        this.addCommand({
+            id: "activate-lightspeed-jump",
+            name: "Lightspeed Jump",
+            callback: this.action.bind(this, 'lightspeed'),
+            hotkeys: [],
+        });
     }
 
     onunload() {
         console.log('unloading jump to links plugin');
     }
 
-    action(type: 'link' | 'regexp') {
+    action(type: 'link' | 'regexp' | 'lightspeed') {
         if (this.isLinkHintActive) {
             return;
         }
@@ -67,6 +72,9 @@ export default class JumpToLink extends Plugin {
             case "regexp":
                 this.handleJumpToRegex();
                 return
+            case "lightspeed":
+                this.handleLightspeedJump();
+                return
         }
     }
 
@@ -76,69 +84,119 @@ export default class JumpToLink extends Plugin {
 
         if (currentView.getState().mode === 'preview') {
             return VIEW_MODE.PREVIEW;
-        } else if (!isLegacy) {
-            return VIEW_MODE.CM6;
-        } else if (currentView.getState().mode === 'source') {
+        } else if (isLegacy) {
             return VIEW_MODE.LEGACY;
+        } else if (currentView.getState().mode === 'source') {
+            return VIEW_MODE.SOURCE;
         }
 
-        return VIEW_MODE.LEGACY;
     }
 
     handleJumpToLink = () => {
         const {settings: {letters}, app} = this
 
-        const currentView = app.workspace.activeLeaf.view;
+        const currentView = app.workspace.getLeaf(false).view;
         const mode = this.getMode(currentView);
+
+        const { contentEl } = app.workspace.getActiveViewOfType(MarkdownView)
 
         switch (mode) {
             case VIEW_MODE.LEGACY:
                 const cmEditor: Editor = (currentView as any).sourceMode.cmEditor;
                 const sourceLinkHints = new LegacySourceLinkProcessor(cmEditor, letters).init();
-                this.handleActions(sourceLinkHints, cmEditor);
+                this.handleActions(sourceLinkHints, contentEl, cmEditor);
                 break;
             case VIEW_MODE.PREVIEW:
                 const previewViewEl: HTMLElement = (currentView as any).previewMode.containerEl.querySelector('div.markdown-preview-view');
                 const previewLinkHints = new PreviewLinkProcessor(previewViewEl, letters).init();
-                this.handleActions(previewLinkHints);
+                this.handleActions(previewLinkHints, contentEl);
                 break;
-            case VIEW_MODE.CM6:
+            case VIEW_MODE.SOURCE:
                 const cm6Editor: EditorView = (<{ editor?: { cm: EditorView } }>currentView).editor.cm;
                 const livePreviewLinks = new CM6LinkProcessor(cm6Editor, letters).init();
-                this.markPlugin.setLinks(livePreviewLinks);
+                cm6Editor.plugin(this.markViewPlugin).setLinks(livePreviewLinks);
                 this.app.workspace.updateOptions();
-                this.handleActions(livePreviewLinks);
+                this.handleActions(livePreviewLinks, contentEl);
                 break;
         }
     }
 
-    handleJumpToRegex = () => {
+    /*
+    *  caseSensitive is only for lightspeed and shall not affect jumpToAnywhere, so it is true
+    *  by default
+    */
+    handleJumpToRegex = (stringToSearch?: string, caseSensitive: boolean = true) => {
         const {app, settings: {letters, jumpToAnywhereRegex}} = this
-        const currentView = app.workspace.activeLeaf.view;
+        const currentView = app.workspace.getLeaf(false).view
         const mode = this.getMode(currentView);
+        const whatToLookAt = stringToSearch || jumpToAnywhereRegex;
+
+        const { contentEl } = app.workspace.getActiveViewOfType(MarkdownView)
 
         switch (mode) {
-            case VIEW_MODE.CM6:
+            case VIEW_MODE.SOURCE:
                 const cm6Editor: EditorView = (<{ editor?: { cm: EditorView } }>currentView).editor.cm;
-                const livePreviewLinks = new CM6RegexProcessor(cm6Editor, letters, jumpToAnywhereRegex).init();
-                this.markPlugin.setLinks(livePreviewLinks);
+                const livePreviewLinks = new CM6RegexProcessor(cm6Editor, letters, whatToLookAt, caseSensitive).init();
+                cm6Editor.plugin(this.markViewPlugin).setLinks(livePreviewLinks);
                 this.app.workspace.updateOptions();
-                this.handleActions(livePreviewLinks, cm6Editor);
+                this.handleActions(livePreviewLinks, contentEl, cm6Editor);
                 break;
             case VIEW_MODE.PREVIEW:
                 break;
             case VIEW_MODE.LEGACY:
                 const cmEditor: Editor = (currentView as any).sourceMode.cmEditor;
-                const links = new LegacyRegexpProcessor(cmEditor, jumpToAnywhereRegex, letters).init();
-                this.handleActions(links, cmEditor);
+                const links = new LegacyRegexpProcessor(cmEditor, whatToLookAt, letters, caseSensitive).init();
+                this.handleActions(links, contentEl, cmEditor);
                 break;
             default:
                 break;
         }
 
     }
+    // adapted from: https://github.com/mrjackphil/obsidian-jump-to-link/issues/35#issuecomment-1085905668
+    handleLightspeedJump() {
+        // get all text color
+        const { contentEl } = app.workspace.getActiveViewOfType(MarkdownView);
+        if (!contentEl) {return}
+        // this element doesn't exist in cm5/has a different class, so lightspeed will not work in cm5
+        const contentContainerColor = contentEl.getElementsByClassName("cm-contentContainer");
+        const originalColor = (contentContainerColor[0] as HTMLElement).style.color;
+        // change all text color to gray
+        (contentContainerColor[0] as HTMLElement).style.color = 'var(--jump-to-link-lightspeed-color)';
 
-    handleActions = (linkHints: LinkHintBase[], cmEditor?: Editor | EditorView): void => {
+        const keyArray: string[] = [];
+        const grabKey = (event: KeyboardEvent) => {
+            event.preventDefault();
+            // handle Escape to reject the mode
+            if (event.key === 'Escape') {
+                contentEl.removeEventListener("keydown", grabKey, { capture: true });
+                (contentContainerColor[0] as HTMLElement).style.color = originalColor;
+            }
+
+            // test if keypress is capitalized
+            if (/^[a-z]$/i.test(event.key)) {
+                const isCapital = event.shiftKey;
+                if (isCapital) {
+                    // capture uppercase
+                    keyArray.push((event.key).toUpperCase());
+                } else {
+                    // capture lowercase
+                    keyArray.push(event.key);
+                }
+            }
+
+            // stop when length of array is equal to 2
+            if (keyArray.length === 2) {
+                this.handleJumpToRegex("\\b" + keyArray.join(""), this.settings.lightspeedCaseSensitive);
+                // removing eventListener after proceeded
+                contentEl.removeEventListener("keydown", grabKey, { capture: true });
+                (contentContainerColor[0] as HTMLElement).style.color = originalColor;
+            }
+        }
+        contentEl.addEventListener('keydown', grabKey, { capture: true });
+    }
+
+    handleActions = (linkHints: LinkHintBase[], currentView: HTMLElement, cmEditor?: Editor | EditorView): void => {
         if (!linkHints.length) {
             return;
         }
@@ -148,8 +206,11 @@ export default class JumpToLink extends Plugin {
 
         const handleHotkey = (newLeaf: boolean, link: SourceLinkHint | LinkHintBase) => {
             if (link.type === 'internal') {
-                // not sure why the second argument in openLinkText is necessary.
-                this.app.workspace.openLinkText(decodeURI(link.linkText), '', newLeaf, {active: true});
+                const file = this.app.workspace.getActiveFile()
+                if (file) {
+                    // the second argument is for the link resolution
+                    this.app.workspace.openLinkText(decodeURI(link.linkText), file.path, newLeaf, {active: true});
+                }
             } else if (link.type === 'external') {
                 window.open(link.linkText);
             } else {
@@ -164,11 +225,13 @@ export default class JumpToLink extends Plugin {
         }
 
         const removePopovers = () => {
-            document.removeEventListener('click', removePopovers)
-            document.querySelectorAll('.jl.popover').forEach(e => e.remove());
-            document.querySelectorAll('#jl-modal').forEach(e => e.remove());
+            currentView.removeEventListener('click', removePopovers)
+            currentView.querySelectorAll('.jl.popover').forEach(e => e.remove());
+            currentView.querySelectorAll('#jl-modal').forEach(e => e.remove());
             this.prefixInfo = undefined;
-            this.markPlugin.clean();
+            const view = app.workspace.getLeaf(false).view
+            const cm6Editor: EditorView = (<{ editor?: { cm: EditorView } }>view).editor.cm;
+            cm6Editor.plugin(this.markViewPlugin).clean();
             this.app.workspace.updateOptions();
             this.isLinkHintActive = false;
         }
@@ -205,12 +268,12 @@ export default class JumpToLink extends Plugin {
 
             linkHint && handleHotkey(newLeaf, linkHint);
 
-            document.removeEventListener('keydown', handleKeyDown, { capture: true });
+            currentView.removeEventListener('keydown', handleKeyDown, { capture: true });
             removePopovers();
         };
 
-        document.addEventListener('click', removePopovers)
-        document.addEventListener('keydown', handleKeyDown, { capture: true });
+        currentView.addEventListener('click', removePopovers)
+        currentView.addEventListener('keydown', handleKeyDown, { capture: true });
         this.isLinkHintActive = true;
     }
 }
@@ -270,5 +333,18 @@ class SettingTab extends PluginSettingTab {
                         await this.plugin.saveData(this.plugin.settings);
                     })
             );
+
+        new Setting(containerEl)
+            .setName('Lightspeed regex case sensitivity')
+            .setDesc(
+                'If enabled, the regex for matching will be case sensitive.'
+            )
+            .addToggle((toggle) => {
+                toggle.setValue(this.plugin.settings.lightspeedCaseSensitive)
+                    .onChange(async (state) => {
+                    this.plugin.settings.lightspeedCaseSensitive = state;
+                    await this.plugin.saveData(this.plugin.settings);
+                });
+            });
     }
 }

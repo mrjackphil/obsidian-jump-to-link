@@ -7,11 +7,13 @@ export default class LegacyRegexpProcessor implements Processor {
     cmEditor: Editor;
     regexp: string;
     letters: string;
+    caseSensitive: boolean;
 
-    constructor(cmEditor: Editor, regexp: string, alphabet: string) {
+    constructor(cmEditor: Editor, regexp: string, alphabet: string, caseSensitive: boolean) {
         this.cmEditor = cmEditor;
         this.regexp = regexp;
         this.letters = alphabet;
+        this.caseSensitive = caseSensitive;
     }
 
     public init(): SourceLinkHint[] {
@@ -31,7 +33,7 @@ export default class LegacyRegexpProcessor implements Processor {
 
     private getLinks(content: string, offset: number): SourceLinkHint[] {
         const { regexp, letters } = this
-        return extractRegexpBlocks(content, offset, regexp, letters);
+        return extractRegexpBlocks(content, offset, regexp, letters, this.caseSensitive);
     }
 
     private display(links: SourceLinkHint[]): void {

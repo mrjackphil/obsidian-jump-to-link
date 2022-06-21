@@ -8,10 +8,12 @@ import { MarkWidget } from "./MarkWidget";
 import {SourceLinkHint} from "../../types";
 
 export class MarkPlugin {
+    decorations: DecorationSet;
     links: SourceLinkHint[] = [];
 
-    constructor(links: SourceLinkHint[]) {
-        this.links = links;
+    constructor(_view: EditorView) {
+        this.links = [];
+        this.decorations = Decoration.none
     }
 
     setLinks(links: SourceLinkHint[]) {
@@ -26,7 +28,7 @@ export class MarkPlugin {
         return this.links.length > 0;
     }
 
-    createMarks(): DecorationSet {
+    update(_update: ViewUpdate) {
         const widgets = this.links.map((x) =>
             Decoration.widget({
                 widget: new MarkWidget(x.letter),
@@ -34,20 +36,7 @@ export class MarkPlugin {
             }).range(x.index)
         );
 
-        return Decoration.set(widgets);
+        this.decorations = Decoration.set(widgets)
     }
 }
 
-export function createViewPluginClass(markPlugin: MarkPlugin) {
-    return class {
-        decorations: DecorationSet;
-
-        constructor(_view: EditorView) {
-            this.decorations = markPlugin.createMarks();
-        }
-
-        update(_update: ViewUpdate) {
-            this.decorations = markPlugin.createMarks();
-        }
-    };
-}
