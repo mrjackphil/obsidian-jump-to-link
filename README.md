@@ -5,7 +5,10 @@ Quickly navigate between links, or jump to any word on the page using hotkeys.
 ![](https://user-images.githubusercontent.com/5632228/99727862-27fbee80-2a7e-11eb-8af2-7303cc177fca.png)
 
 ### Jump to Anywhere (RegEx based navigation)
-![](./screenshots/jumptoanywhere.png)
+![](https://raw.githubusercontent.com/mrjackphil/obsidian-jump-to-link/master/screenshots/jumptoanywhere.png)
+
+### Lightspeed
+![](https://raw.githubusercontent.com/mrjackphil/obsidian-jump-to-link/master/screenshots/lightspeed.gif)
 
 ### Settings
 ![](./screenshots/settings.png)
