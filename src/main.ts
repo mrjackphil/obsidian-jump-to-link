@@ -95,7 +95,7 @@ export default class JumpToLink extends Plugin {
     handleJumpToLink = () => {
         const {settings: {letters}, app} = this
 
-        const currentView = app.workspace.getLeaf(false).view;
+        const currentView = app.workspace.getActiveViewOfType(MarkdownView).leaf.view;
         const mode = this.getMode(currentView);
 
         const { contentEl } = app.workspace.getActiveViewOfType(MarkdownView)
@@ -127,7 +127,7 @@ export default class JumpToLink extends Plugin {
     */
     handleJumpToRegex = (stringToSearch?: string, caseSensitive: boolean = true) => {
         const {app, settings: {letters, jumpToAnywhereRegex}} = this
-        const currentView = app.workspace.getLeaf(false).view
+        const currentView = app.workspace.getActiveViewOfType(MarkdownView).leaf.view;
         const mode = this.getMode(currentView);
         const whatToLookAt = stringToSearch || jumpToAnywhereRegex;
 
@@ -229,7 +229,7 @@ export default class JumpToLink extends Plugin {
             currentView.querySelectorAll('.jl.popover').forEach(e => e.remove());
             currentView.querySelectorAll('#jl-modal').forEach(e => e.remove());
             this.prefixInfo = undefined;
-            const view = app.workspace.getLeaf(false).view
+            const view = app.workspace.getActiveViewOfType(MarkdownView).leaf.view;
             const cm6Editor: EditorView = (<{ editor?: { cm: EditorView } }>view).editor.cm;
             cm6Editor.plugin(this.markViewPlugin).clean();
             this.app.workspace.updateOptions();
