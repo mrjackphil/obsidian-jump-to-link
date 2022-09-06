@@ -18,7 +18,20 @@ export default class CM6LinkProcessor implements Processor {
     public getVisibleLines() {
         const { cmEditor } = this;
 
-        const { from, to } = cmEditor.viewport;
+        let { from, to } = cmEditor.viewport;
+
+        // For CM6 get real visible lines top
+        // @ts-ignore
+        if (cmEditor.viewState?.pixelViewport?.top) {
+            // @ts-ignore
+            const pixelOffsetTop = cmEditor.viewState.pixelViewport.top
+            // @ts-ignore
+            const lines = cmEditor.viewState.viewportLines
+
+            // @ts-ignore
+            from = lines.filter(line => line.top > pixelOffsetTop)[0]?.from
+        }
+
         const content = cmEditor.state.sliceDoc(from, to);
 
         return { index: from, content };
