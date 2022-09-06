@@ -68,7 +68,7 @@ export function getMDHintLinks(content: string, offset: number, letters: string)
     let regExResult;
 
     while(regExResult = regExInternal.exec(content)) {
-        const linkText = regExResult[1];
+        const linkText = regExResult[1]?.trim();
         linksWithIndex.push({ index: regExResult.index + offset, type: 'internal', linkText });
     }
 
