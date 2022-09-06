@@ -59,8 +59,8 @@ export function getMDHintLinks(content: string, offset: number, letters: string)
     const regExInternal = /\[\[(.+?)(\|.+?)?]]/g;
     // expecting [Title](../example.md)
     const regExMdInternal = /\[.+?]\(((\.\.|\w|\d).+?)\)/g;
-    // expecting [Title](file://link) or [Title](https://link)
-    const regExExternal = /\[.+?]\(((https?:|file:).+?)\)/g;
+    // expecting [Title](file://link), [Title](https://link) or any other [Jira-123](jira://bla-bla) link
+    const regExExternal = /\[.+?]\((.+?:\/\/.+?)\)/g;
     // expecting http://hogehoge or https://hogehoge
     const regExUrl = /( |\n|^)(https?:\/\/[^ \n]+)/g;
 
