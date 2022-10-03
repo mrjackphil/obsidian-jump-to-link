@@ -217,13 +217,8 @@ export default class JumpToLink extends Plugin {
         if (link.type === 'internal') {
             const file = this.app.workspace.getActiveFile()
             if (file) {
-                let linkToProceed = link.linkText;
-
-                if (!linkToProceed.startsWith('%')) {
-                    linkToProceed = decodeURI(linkToProceed)
-                }
                 // the second argument is for the link resolution
-                this.app.workspace.openLinkText(linkToProceed, file.path, newLeaf, {active: true});
+                this.app.workspace.openLinkText(decodeURI(link.linkText), file.path, newLeaf, {active: true});
             }
         } else if (link.type === 'external') {
             window.open(link.linkText);
@@ -261,8 +256,6 @@ export default class JumpToLink extends Plugin {
         linkHints.forEach(x => linkHintMap[x.letter] = x);
 
         const handleKeyDown = (event: KeyboardEvent): void => {
-            this.removePopovers();
-
             if (event.key === 'Shift') {
                 return;
             }
@@ -294,15 +287,9 @@ export default class JumpToLink extends Plugin {
 
             linkHint && this.handleHotkey(newLeaf, linkHint);
 
+            this.removePopovers();
             contentElement.removeEventListener('keydown', handleKeyDown, { capture: true });
         };
-
-
-        if (linkHints.length === 1) {
-            this.handleHotkey(false, linkHints[0])
-            this.removePopovers()
-            return
-        }
 
         contentElement.addEventListener('click', this.removePopovers)
         contentElement.addEventListener('keydown', handleKeyDown, { capture: true });
