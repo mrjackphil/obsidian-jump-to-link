@@ -323,7 +323,7 @@ export default class JumpToLink extends Plugin {
             const editor = this.app.workspace.getActiveViewOfType(MarkdownView)?.editor;
             const cm: Editor | undefined = (editor as any)?.cm?.cm;
 
-            if (!(cm as any)._handlers.cursorActivity.includes(updateSelection)) {
+            if (cm && !(cm as any)._handlers.cursorActivity.includes(updateSelection)) {
                 cm.on("cursorActivity", updateSelection);
                 this.register(() => cm.off("cursorActivity", updateSelection));
             }
