@@ -21,6 +21,7 @@ Quickly navigate between links, or jump to any word on the page using hotkeys.
 
 ### How to use Jump to Anywhere (Editor Navigation)
 - Use the command palette, or press the hotkey (`Ctrl + ;` by default) to instantly jump to any word on the page!
+- If you hold `Shift` while pressing the hotkey, you will select to the word you jump to.
 - Jump to Anywhere is a RegEx based navigation feature, similar to [`vim-easymotion`](https://github.com/easymotion/vim-easymotion).
 - Jump to Anywhere works both in regular editor mode, and in VIM mode!
 - Custom RegEx can be configured to user preference
