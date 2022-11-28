@@ -198,7 +198,7 @@ export default class JumpToLink extends Plugin {
             }
 
             // test if keypress is capitalized
-            if (/^[a-z]$/i.test(event.key)) {
+            if (/^[\w\S\W]$/i.test(event.key)) {
                 const isCapital = event.shiftKey;
                 if (isCapital) {
                     // capture uppercase
