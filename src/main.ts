@@ -16,7 +16,10 @@ enum VIEW_MODE {
     PREVIEW,
     LEGACY
 }
-
+interface CursorState {
+    vimMode?: string;
+    anchor?: number;
+}
 export default class JumpToLink extends Plugin {
     isLinkHintActive: boolean = false;
     settings: Settings;
@@ -27,6 +30,8 @@ export default class JumpToLink extends Plugin {
     currentView: View
     contentElement: HTMLElement
     mode: VIEW_MODE
+    currentCursor: CursorState = {};
+    cursorBeforeJump: CursorState = {};
 
     async onload() {
         this.settings = await this.loadData() || new Settings();
@@ -37,6 +42,8 @@ export default class JumpToLink extends Plugin {
             decorations: v => v.decorations
         });
         this.registerEditorExtension([markViewPlugin])
+
+        this.watchForSelectionChange();
 
         this.addCommand({
             id: 'activate-jump-to-link',
@@ -73,6 +80,7 @@ export default class JumpToLink extends Plugin {
         const currentView = this.currentView = activeViewOfType.leaf.view;
         const mode = this.mode = this.getMode(this.currentView);
         this.contentElement = activeViewOfType.contentEl
+        this.cursorBeforeJump = this.currentCursor;
 
         switch (mode) {
             case VIEW_MODE.LEGACY:
@@ -213,12 +221,12 @@ export default class JumpToLink extends Plugin {
         contentEl.addEventListener('keydown', grabKey, { capture: true });
     }
 
-    handleHotkey(newLeaf: boolean, link: SourceLinkHint | LinkHintBase) {
+    handleHotkey(heldShiftKey: boolean, link: SourceLinkHint | LinkHintBase) {
         if (link.type === 'internal') {
             const file = this.app.workspace.getActiveFile()
             if (file) {
                 // the second argument is for the link resolution
-                this.app.workspace.openLinkText(decodeURI(link.linkText), file.path, newLeaf, {active: true});
+                this.app.workspace.openLinkText(decodeURI(link.linkText), file.path, heldShiftKey, {active: true});
             }
         } else if (link.type === 'external') {
             window.open(link.linkText);
@@ -226,7 +234,14 @@ export default class JumpToLink extends Plugin {
             const editor = this.cmEditor;
             if (editor instanceof EditorView) {
                 const index = (link as SourceLinkHint).index;
-                editor.dispatch({ selection: EditorSelection.cursor(index) })
+                const {vimMode, anchor} = this.cursorBeforeJump;
+                const useSelection = heldShiftKey || (vimMode === 'visual' || vimMode === 'visual block')
+
+                if (useSelection && anchor !== undefined) {
+                    editor.dispatch({selection: EditorSelection.range(anchor, index)})
+                } else {
+                    editor.dispatch({ selection: EditorSelection.cursor(index) })
+                }
             } else {
                 editor.setCursor(editor.posFromIndex((<SourceLinkHint>link).index));
             }
@@ -283,9 +298,9 @@ export default class JumpToLink extends Plugin {
             event.stopPropagation();
             event.stopImmediatePropagation();
 
-            const newLeaf = this.prefixInfo?.shiftKey || event.shiftKey;
+            const heldShiftKey = this.prefixInfo?.shiftKey || event.shiftKey;
 
-            linkHint && this.handleHotkey(newLeaf, linkHint);
+            linkHint && this.handleHotkey(heldShiftKey, linkHint);
 
             this.removePopovers();
             contentElement.removeEventListener('keydown', handleKeyDown, { capture: true });
@@ -301,6 +316,36 @@ export default class JumpToLink extends Plugin {
         contentElement.addEventListener('click', this.removePopovers)
         contentElement.addEventListener('keydown', handleKeyDown, { capture: true });
         this.isLinkHintActive = true;
+    }
+
+    /**
+     * CodeMirror's vim automatically exits visual mode when executing a command.
+     * This keeps track of selection changes so we can restore the selection.
+     *
+     * This is the same approach taken by the obsidian-vimrc-plugin
+     */
+    watchForSelectionChange() {
+        const updateSelection = this.updateSelection.bind(this)
+        const watchForChanges = () => {
+            const editor = this.app.workspace.getActiveViewOfType(MarkdownView)?.editor;
+            const cm: Editor | undefined = (editor as any)?.cm?.cm;
+
+            if (cm && !(cm as any)._handlers.cursorActivity.includes(updateSelection)) {
+                cm.on("cursorActivity", updateSelection);
+                this.register(() => cm.off("cursorActivity", updateSelection));
+            }
+        }
+        this.registerEvent(this.app.workspace.on("active-leaf-change", watchForChanges));
+        this.registerEvent(this.app.workspace.on("file-open", watchForChanges));
+        watchForChanges();
+    }
+
+    updateSelection(editor: Editor) {
+        const anchor = editor.listSelections()[0]?.anchor
+        this.currentCursor = {
+            anchor: anchor ? editor.indexFromPos(anchor) : undefined,
+            vimMode: editor.state.vim?.mode
+        }
     }
 }
 
