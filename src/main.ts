@@ -1,4 +1,4 @@
-import {App, MarkdownView, Plugin, PluginSettingTab, Setting, View} from 'obsidian';
+import {App, MarkdownView, Plugin, PluginSettingTab, Setting, View, editorLivePreviewField} from 'obsidian';
 import {Editor} from 'codemirror';
 import {EditorSelection} from "@codemirror/state";
 import {EditorView, ViewPlugin} from "@codemirror/view";
@@ -110,15 +110,14 @@ export default class JumpToLink extends Plugin {
     getMode(currentView: View): VIEW_MODE {
         // @ts-ignore
         const isLegacy = this.app.vault.getConfig("legacyEditor")
-        const isLivePreview = !!currentView.containerEl.querySelector('.is-live-preview')
 
         if (currentView.getState().mode === 'preview') {
             return VIEW_MODE.PREVIEW;
         } else if (isLegacy) {
             return VIEW_MODE.LEGACY;
-        } else if (currentView.getState().mode === 'source' && isLivePreview) {
-            return VIEW_MODE.LIVE_PREVIEW;
         } else if (currentView.getState().mode === 'source') {
+            const isLivePreview = (<{ editor?: { cm: EditorView } }>currentView).editor.cm.state.field(editorLivePreviewField)
+            if(isLivePreview) return VIEW_MODE.LIVE_PREVIEW
             return VIEW_MODE.SOURCE;
         }
 
