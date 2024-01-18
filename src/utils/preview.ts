@@ -4,7 +4,7 @@ import {getLinkHintLetters} from "./common";
 export function getPreviewLinkHints(previewViewEl: HTMLElement, letters: string ): PreviewLinkHint[] {
     const anchorEls = previewViewEl.querySelectorAll('a');
     const embedEls = previewViewEl.querySelectorAll('.internal-embed');
-
+    
     const linkHints: PreviewLinkHint[] = [];
     anchorEls.forEach((anchorEl, _i) => {
         if (checkIsPreviewElOnScreen(previewViewEl, anchorEl)) {
@@ -16,7 +16,7 @@ export function getPreviewLinkHints(previewViewEl: HTMLElement, letters: string 
             : 'external';
 
         const linkText = linkType === 'internal'
-            ? anchorEl.dataset['href']
+            ? anchorEl.dataset['href'] ?? anchorEl.href
             : anchorEl.href;
 
         let offsetParent = anchorEl.offsetParent as HTMLElement;
@@ -32,7 +32,6 @@ export function getPreviewLinkHints(previewViewEl: HTMLElement, letters: string 
                 offsetParent = offsetParent.offsetParent as HTMLElement;
             }
         }
-
         linkHints.push({
             letter: '',
             linkText: linkText,
@@ -109,7 +108,7 @@ export function displayPreviewPopovers(markdownPreviewViewEl: HTMLElement, linkH
         const linkHintEl = markdownPreviewViewEl.createEl('div');
         linkHintEl.style.top = linkHint.top + 'px';
         linkHintEl.style.left = linkHint.left + 'px';
-
+        
         linkHintEl.textContent = linkHint.letter;
         linkHintEl.classList.add('jl');
         linkHintEl.classList.add('popover');

@@ -10,11 +10,13 @@ import CM6RegexProcessor from "./processors/CM6RegexProcessor";
 import LegacyRegexpProcessor from "./processors/LegacyRegexpProcessor";
 import LegacySourceLinkProcessor from "./processors/LegacySourceLinkProcessor";
 import PreviewLinkProcessor from "./processors/PreviewLinkProcessor";
+import LivePreviewLinkProcessor from './processors/LivePreviewLinkProcessor';
 
 enum VIEW_MODE {
     SOURCE,
     PREVIEW,
-    LEGACY
+    LEGACY,
+    LIVE_PREVIEW
 }
 interface CursorState {
     vimMode?: string;
@@ -86,6 +88,7 @@ export default class JumpToLink extends Plugin {
             case VIEW_MODE.LEGACY:
                 this.cmEditor = (currentView as any).sourceMode.cmEditor;
                 break;
+            case VIEW_MODE.LIVE_PREVIEW:
             case VIEW_MODE.SOURCE:
                 this.cmEditor = (<{ editor?: { cm: EditorView } }>currentView).editor.cm;
                 break;
@@ -107,11 +110,14 @@ export default class JumpToLink extends Plugin {
     getMode(currentView: View): VIEW_MODE {
         // @ts-ignore
         const isLegacy = this.app.vault.getConfig("legacyEditor")
+        const isLivePreview = !!currentView.containerEl.querySelector('.is-live-preview')
 
         if (currentView.getState().mode === 'preview') {
             return VIEW_MODE.PREVIEW;
         } else if (isLegacy) {
             return VIEW_MODE.LEGACY;
+        } else if (currentView.getState().mode === 'source' && isLivePreview) {
+            return VIEW_MODE.LIVE_PREVIEW;
         } else if (currentView.getState().mode === 'source') {
             return VIEW_MODE.SOURCE;
         }
@@ -124,23 +130,35 @@ export default class JumpToLink extends Plugin {
         const { mode, currentView } = this;
 
         switch (mode) {
-            case VIEW_MODE.LEGACY:
+            case VIEW_MODE.LEGACY: {
                 const cmEditor = this.cmEditor as Editor;
                 const sourceLinkHints = new LegacySourceLinkProcessor(cmEditor, letters).init();
                 this.handleActions(sourceLinkHints);
                 break;
-            case VIEW_MODE.PREVIEW:
+            }
+            case VIEW_MODE.LIVE_PREVIEW: {
+                const cm6Editor = this.cmEditor as EditorView;
+                const previewViewEl: HTMLElement = (currentView as any).currentMode.editor.containerEl;
+                const [previewLinkHints, sourceLinkHints] = new LivePreviewLinkProcessor(previewViewEl, cm6Editor, letters).init();
+                cm6Editor.plugin(this.markViewPlugin).setLinks(sourceLinkHints);
+                this.app.workspace.updateOptions();
+                this.handleActions([...previewLinkHints, ...sourceLinkHints]);
+                break;
+            }
+            case VIEW_MODE.PREVIEW: {
                 const previewViewEl: HTMLElement = (currentView as any).previewMode.containerEl.querySelector('div.markdown-preview-view');
                 const previewLinkHints = new PreviewLinkProcessor(previewViewEl, letters).init();
                 this.handleActions(previewLinkHints);
                 break;
-            case VIEW_MODE.SOURCE:
+            }
+            case VIEW_MODE.SOURCE: {
                 const cm6Editor = this.cmEditor as EditorView;
                 const livePreviewLinks = new CM6LinkProcessor(cm6Editor, letters).init();
                 cm6Editor.plugin(this.markViewPlugin).setLinks(livePreviewLinks);
                 this.app.workspace.updateOptions();
                 this.handleActions(livePreviewLinks);
                 break;
+            }
         }
     }
 
@@ -261,7 +279,7 @@ export default class JumpToLink extends Plugin {
         this.isLinkHintActive = false;
     }
 
-    handleActions(linkHints: LinkHintBase[]): void {
+handleActions(linkHints: LinkHintBase[]): void {
         const contentElement = this.contentElement
         if (!linkHints.length) {
             return;
