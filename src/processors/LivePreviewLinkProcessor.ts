@@ -21,7 +21,7 @@ export default class LivePreviewLinkProcessor {
         const sourceLinks = this.getSourceLinkHints();
         const linkHintLetters = getLinkHintLetters(alphabet, links.length + sourceLinks.length);
         const sourceLinksRemapped = sourceLinks.map((link, idx) => ({...link, letter: linkHintLetters[idx + links.length]}))
-        displayPreviewPopovers(view, links);
+        displayPreviewPopovers(view.querySelector('div.cm-scroller'), links);
         return [links, sourceLinksRemapped];
     }
 
