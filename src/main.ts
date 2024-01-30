@@ -138,10 +138,10 @@ export default class JumpToLink extends Plugin {
             case VIEW_MODE.LIVE_PREVIEW: {
                 const cm6Editor = this.cmEditor as EditorView;
                 const previewViewEl: HTMLElement = (currentView as any).currentMode.editor.containerEl;
-                const [previewLinkHints, sourceLinkHints] = new LivePreviewLinkProcessor(previewViewEl, cm6Editor, letters).init();
+                const [previewLinkHints, sourceLinkHints, linkHintHtmlElements] = new LivePreviewLinkProcessor(previewViewEl, cm6Editor, letters).init();
                 cm6Editor.plugin(this.markViewPlugin).setLinks(sourceLinkHints);
                 this.app.workspace.updateOptions();
-                this.handleActions([...previewLinkHints, ...sourceLinkHints]);
+                this.handleActions([...previewLinkHints, ...sourceLinkHints], linkHintHtmlElements );
                 break;
             }
             case VIEW_MODE.PREVIEW: {
@@ -265,10 +265,11 @@ export default class JumpToLink extends Plugin {
         }
     }
 
-    removePopovers() {
+    removePopovers(linkHintHtmlElements?: HTMLElement[]) {
         const currentView = this.contentElement;
 
-        currentView.removeEventListener('click', this.removePopovers)
+        currentView.removeEventListener('click', () => this.removePopovers(linkHintHtmlElements))
+        linkHintHtmlElements.forEach(e => e.remove());
         currentView.querySelectorAll('.jl.popover').forEach(e => e.remove());
         currentView.querySelectorAll('#jl-modal').forEach(e => e.remove());
 
@@ -278,7 +279,8 @@ export default class JumpToLink extends Plugin {
         this.isLinkHintActive = false;
     }
 
-handleActions(linkHints: LinkHintBase[]): void {
+    handleActions(linkHints: LinkHintBase[], linkHintHtmlElements?: HTMLElement[]): void {
+        console.log('handleActions', linkHints)
         const contentElement = this.contentElement
         if (!linkHints.length) {
             return;
@@ -319,18 +321,18 @@ handleActions(linkHints: LinkHintBase[]): void {
 
             linkHint && this.handleHotkey(heldShiftKey, linkHint);
 
-            this.removePopovers();
+            this.removePopovers(linkHintHtmlElements);
             contentElement.removeEventListener('keydown', handleKeyDown, { capture: true });
         };
 
         if (linkHints.length === 1) {
             const heldShiftKey = this.prefixInfo?.shiftKey;
             this.handleHotkey(heldShiftKey, linkHints[0]);
-            this.removePopovers();
+            this.removePopovers(linkHintHtmlElements);
             return
         }
 
-        contentElement.addEventListener('click', this.removePopovers)
+        contentElement.addEventListener('click', () => this.removePopovers(linkHintHtmlElements))
         contentElement.addEventListener('keydown', handleKeyDown, { capture: true });
         this.isLinkHintActive = true;
     }

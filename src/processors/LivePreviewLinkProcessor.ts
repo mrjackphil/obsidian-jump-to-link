@@ -15,14 +15,14 @@ export default class LivePreviewLinkProcessor {
         this.alphabet = alphabet;
     }
 
-    public init(): [PreviewLinkHint[],SourceLinkHint[]] {
+    public init(): [PreviewLinkHint[],SourceLinkHint[],HTMLElement[]] {
         const { view, alphabet } = this
         const links = getPreviewLinkHints(view, alphabet);
         const sourceLinks = this.getSourceLinkHints();
         const linkHintLetters = getLinkHintLetters(alphabet, links.length + sourceLinks.length);
         const sourceLinksRemapped = sourceLinks.map((link, idx) => ({...link, letter: linkHintLetters[idx + links.length]}))
-        displayPreviewPopovers(links);
-        return [links, sourceLinksRemapped];
+        const linkHintHtmlElements = displayPreviewPopovers(links);
+        return [links, sourceLinksRemapped, linkHintHtmlElements];
     }
 
     public getVisibleLines() {

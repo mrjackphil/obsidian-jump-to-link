@@ -105,7 +105,8 @@ export function checkIsPreviewElOnScreen(parent: HTMLElement, el: HTMLElement) {
     return el.offsetTop < parent.scrollTop || el.offsetTop > parent.scrollTop + parent.offsetHeight
 }
 
-export function displayPreviewPopovers(linkHints: PreviewLinkHint[]): void {
+export function displayPreviewPopovers(linkHints: PreviewLinkHint[]): HTMLElement[] {
+    const linkHintHtmlElements: HTMLElement[] = []
     for (let linkHint of linkHints) {
         const popoverElement = linkHint.linkElement.createEl('span');
         linkHint.linkElement.style.position = 'relative'
@@ -115,6 +116,8 @@ export function displayPreviewPopovers(linkHints: PreviewLinkHint[]): void {
         popoverElement.classList.add('jl');
         popoverElement.classList.add('jl-'+linkHint.type);
         popoverElement.classList.add('popover');
+        linkHintHtmlElements.push(popoverElement)
     }
+    return linkHintHtmlElements
 }
 
