@@ -31,7 +31,7 @@ export class MarkPlugin {
     update(_update: ViewUpdate) {
         const widgets = this.links.map((x) =>
             Decoration.widget({
-                widget: new MarkWidget(x.letter),
+                widget: new MarkWidget(x.letter, x.type),
                 side: 1,
             }).range(x.index)
         );

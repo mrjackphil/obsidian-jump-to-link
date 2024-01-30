@@ -1,7 +1,7 @@
 import {WidgetType} from "@codemirror/view";
 
 export class MarkWidget extends WidgetType {
-    constructor(readonly mark: string) {
+    constructor(readonly mark: string, readonly type: string) {
         super();
     }
 
@@ -17,6 +17,7 @@ export class MarkWidget extends WidgetType {
         wrapper.style.display = "inline-block";
         wrapper.style.position = "absolute";
         wrapper.classList.add('jl');
+        wrapper.classList.add('jl-' + this.type);
         wrapper.classList.add('popover');
         wrapper.append(mark);
 

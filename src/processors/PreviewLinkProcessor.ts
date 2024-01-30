@@ -13,7 +13,7 @@ export default class PreviewLinkProcessor {
     public init(): PreviewLinkHint[] {
         const { view, alphabet } = this
         const links = getPreviewLinkHints(view, alphabet);
-        displayPreviewPopovers(view, links);
+        displayPreviewPopovers(links);
         return links;
     }
 }

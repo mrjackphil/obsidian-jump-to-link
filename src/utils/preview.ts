@@ -33,6 +33,7 @@ export function getPreviewLinkHints(previewViewEl: HTMLElement, letters: string 
             }
         }
         linkHints.push({
+            linkElement: anchorEl,
             letter: '',
             linkText: linkText,
             type: linkType,
@@ -65,6 +66,7 @@ export function getPreviewLinkHints(previewViewEl: HTMLElement, letters: string 
             }
 
             linkHints.push({
+                linkElement: linkEl,
                 letter: '',
                 linkText: linkText,
                 type: 'internal',
@@ -103,15 +105,16 @@ export function checkIsPreviewElOnScreen(parent: HTMLElement, el: HTMLElement) {
     return el.offsetTop < parent.scrollTop || el.offsetTop > parent.scrollTop + parent.offsetHeight
 }
 
-export function displayPreviewPopovers(markdownPreviewViewEl: HTMLElement, linkHints: PreviewLinkHint[]): void {
+export function displayPreviewPopovers(linkHints: PreviewLinkHint[]): void {
     for (let linkHint of linkHints) {
-        const linkHintEl = markdownPreviewViewEl.createEl('div');
-        linkHintEl.style.top = linkHint.top + 'px';
-        linkHintEl.style.left = linkHint.left + 'px';
-        
-        linkHintEl.textContent = linkHint.letter;
-        linkHintEl.classList.add('jl');
-        linkHintEl.classList.add('popover');
+        const popoverElement = linkHint.linkElement.createEl('span');
+        linkHint.linkElement.style.position = 'relative'
+        popoverElement.style.top = '0px';
+        popoverElement.style.left = '0px';
+        popoverElement.textContent = linkHint.letter;
+        popoverElement.classList.add('jl');
+        popoverElement.classList.add('jl-'+linkHint.type);
+        popoverElement.classList.add('popover');
     }
 }
 
