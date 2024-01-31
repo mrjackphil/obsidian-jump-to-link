@@ -1,4 +1,4 @@
-import {App, MarkdownView, Plugin, PluginSettingTab, Setting, View} from 'obsidian';
+import {App, MarkdownView, Plugin, PluginSettingTab, Setting, View, editorLivePreviewField} from 'obsidian';
 import {Editor} from 'codemirror';
 import {EditorSelection} from "@codemirror/state";
 import {EditorView, ViewPlugin} from "@codemirror/view";
@@ -10,11 +10,13 @@ import CM6RegexProcessor from "./processors/CM6RegexProcessor";
 import LegacyRegexpProcessor from "./processors/LegacyRegexpProcessor";
 import LegacySourceLinkProcessor from "./processors/LegacySourceLinkProcessor";
 import PreviewLinkProcessor from "./processors/PreviewLinkProcessor";
+import LivePreviewLinkProcessor from './processors/LivePreviewLinkProcessor';
 
 enum VIEW_MODE {
     SOURCE,
     PREVIEW,
-    LEGACY
+    LEGACY,
+    LIVE_PREVIEW
 }
 interface CursorState {
     vimMode?: string;
@@ -86,6 +88,7 @@ export default class JumpToLink extends Plugin {
             case VIEW_MODE.LEGACY:
                 this.cmEditor = (currentView as any).sourceMode.cmEditor;
                 break;
+            case VIEW_MODE.LIVE_PREVIEW:
             case VIEW_MODE.SOURCE:
                 this.cmEditor = (<{ editor?: { cm: EditorView } }>currentView).editor.cm;
                 break;
@@ -113,6 +116,8 @@ export default class JumpToLink extends Plugin {
         } else if (isLegacy) {
             return VIEW_MODE.LEGACY;
         } else if (currentView.getState().mode === 'source') {
+            const isLivePreview = (<{ editor?: { cm: EditorView } }>currentView).editor.cm.state.field(editorLivePreviewField)
+            if(isLivePreview) return VIEW_MODE.LIVE_PREVIEW
             return VIEW_MODE.SOURCE;
         }
 
@@ -124,23 +129,35 @@ export default class JumpToLink extends Plugin {
         const { mode, currentView } = this;
 
         switch (mode) {
-            case VIEW_MODE.LEGACY:
+            case VIEW_MODE.LEGACY: {
                 const cmEditor = this.cmEditor as Editor;
                 const sourceLinkHints = new LegacySourceLinkProcessor(cmEditor, letters).init();
                 this.handleActions(sourceLinkHints);
                 break;
-            case VIEW_MODE.PREVIEW:
+            }
+            case VIEW_MODE.LIVE_PREVIEW: {
+                const cm6Editor = this.cmEditor as EditorView;
+                const previewViewEl: HTMLElement = (currentView as any).currentMode.editor.containerEl;
+                const [previewLinkHints, sourceLinkHints, linkHintHtmlElements] = new LivePreviewLinkProcessor(previewViewEl, cm6Editor, letters).init();
+                cm6Editor.plugin(this.markViewPlugin).setLinks(sourceLinkHints);
+                this.app.workspace.updateOptions();
+                this.handleActions([...previewLinkHints, ...sourceLinkHints], linkHintHtmlElements );
+                break;
+            }
+            case VIEW_MODE.PREVIEW: {
                 const previewViewEl: HTMLElement = (currentView as any).previewMode.containerEl.querySelector('div.markdown-preview-view');
                 const previewLinkHints = new PreviewLinkProcessor(previewViewEl, letters).init();
                 this.handleActions(previewLinkHints);
                 break;
-            case VIEW_MODE.SOURCE:
+            }
+            case VIEW_MODE.SOURCE: {
                 const cm6Editor = this.cmEditor as EditorView;
                 const livePreviewLinks = new CM6LinkProcessor(cm6Editor, letters).init();
                 cm6Editor.plugin(this.markViewPlugin).setLinks(livePreviewLinks);
                 this.app.workspace.updateOptions();
                 this.handleActions(livePreviewLinks);
                 break;
+            }
         }
     }
 
@@ -248,10 +265,11 @@ export default class JumpToLink extends Plugin {
         }
     }
 
-    removePopovers() {
+    removePopovers(linkHintHtmlElements?: HTMLElement[]) {
         const currentView = this.contentElement;
 
-        currentView.removeEventListener('click', this.removePopovers)
+        currentView.removeEventListener('click', () => this.removePopovers(linkHintHtmlElements))
+        linkHintHtmlElements.forEach(e => e.remove());
         currentView.querySelectorAll('.jl.popover').forEach(e => e.remove());
         currentView.querySelectorAll('#jl-modal').forEach(e => e.remove());
 
@@ -261,7 +279,8 @@ export default class JumpToLink extends Plugin {
         this.isLinkHintActive = false;
     }
 
-    handleActions(linkHints: LinkHintBase[]): void {
+    handleActions(linkHints: LinkHintBase[], linkHintHtmlElements?: HTMLElement[]): void {
+        console.log('handleActions', linkHints)
         const contentElement = this.contentElement
         if (!linkHints.length) {
             return;
@@ -302,18 +321,18 @@ export default class JumpToLink extends Plugin {
 
             linkHint && this.handleHotkey(heldShiftKey, linkHint);
 
-            this.removePopovers();
+            this.removePopovers(linkHintHtmlElements);
             contentElement.removeEventListener('keydown', handleKeyDown, { capture: true });
         };
 
         if (linkHints.length === 1) {
             const heldShiftKey = this.prefixInfo?.shiftKey;
             this.handleHotkey(heldShiftKey, linkHints[0]);
-            this.removePopovers();
+            this.removePopovers(linkHintHtmlElements);
             return
         }
 
-        contentElement.addEventListener('click', this.removePopovers)
+        contentElement.addEventListener('click', () => this.removePopovers(linkHintHtmlElements))
         contentElement.addEventListener('keydown', handleKeyDown, { capture: true });
         this.isLinkHintActive = true;
     }
