@@ -58,33 +58,42 @@ export function getMDHintLinks(content: string, offset: number, letters: string)
     // expecting either [[Link]] or [[Link|Title]]
     const regExInternal = /\[\[(.+?)(\|.+?)?]]/g;
     // expecting [Title](../example.md)
-    const regExMdInternal = /\[.+?]\(((\.\.|\w|\d).+?)\)/g;
+    const regExMdInternal = /\[[^\[\]]+?\]\(((\.\.|\w|\d).+?)\)/g;
     // expecting [Title](file://link), [Title](https://link) or any other [Jira-123](jira://bla-bla) link
-    const regExExternal = /\[.+?]\((.+?:\/\/.+?)\)/g;
+    const regExExternal = /\[[^\[\]]+?\]\((.+?:\/\/.+?)\)/g;
     // expecting http://hogehoge or https://hogehoge
     const regExUrl = /( |\n|^)(https?:\/\/[^ \n]+)/g;
 
-    let linksWithIndex: { index: number, type: 'internal' | 'external', linkText: string }[] = [];
+    type IndexedLink = { index: number, type: 'internal' | 'external', linkText: string }
+    let indexes = new Set<number>()
+    let linksWithIndex: IndexedLink[] = [];
     let regExResult;
+
+    const addLinkToArray = (link: IndexedLink) => {
+        if(indexes.has(link.index)) return
+        indexes.add(link.index)
+        linksWithIndex.push(link)
+    }
 
     while(regExResult = regExInternal.exec(content)) {
         const linkText = regExResult[1]?.trim();
-        linksWithIndex.push({ index: regExResult.index + offset, type: 'internal', linkText });
+        addLinkToArray({ index: regExResult.index + offset, type: 'internal', linkText });
+    }
+
+    // External Link above internal, to prefer type external over interal in case of a dupe
+    while(regExResult = regExExternal.exec(content)) {
+        const linkText = regExResult[1];
+        addLinkToArray({ index: regExResult.index + offset, type: 'external', linkText })
     }
 
     while(regExResult = regExMdInternal.exec(content)) {
         const linkText = regExResult[1];
-        linksWithIndex.push({ index: regExResult.index + offset, type: 'internal', linkText });
-    }
-
-    while(regExResult = regExExternal.exec(content)) {
-        const linkText = regExResult[1];
-        linksWithIndex.push({ index: regExResult.index + offset, type: 'external', linkText })
+        addLinkToArray({ index: regExResult.index + offset, type: 'internal', linkText });
     }
 
     while(regExResult = regExUrl.exec(content)) {
         const linkText = regExResult[2];
-        linksWithIndex.push({ index: regExResult.index + offset + 1, type: 'external', linkText })
+        addLinkToArray({ index: regExResult.index + offset + 1, type: 'external', linkText })
     }
 
     const linkHintLetters = getLinkHintLetters(letters, linksWithIndex.length);
@@ -99,9 +108,10 @@ export function getMDHintLinks(content: string, offset: number, letters: string)
     return linksWithLetter.filter(link => link.letter);
 }
 
-export function createWidgetElement(content: string) {
+export function createWidgetElement(content: string, type: string) {
     const linkHintEl = activeDocument.createElement('div');
     linkHintEl.classList.add('jl');
+    linkHintEl.classList.add('jl-'+type);
     linkHintEl.classList.add('popover');
     linkHintEl.innerHTML = content;
     return linkHintEl;
@@ -111,7 +121,7 @@ export function displaySourcePopovers(cmEditor: Editor, linkKeyMap: SourceLinkHi
     const drawWidget = (cmEditor: Editor, linkHint: SourceLinkHint) => {
         const pos = cmEditor.posFromIndex(linkHint.index);
         // the fourth parameter is undocumented. it specifies where the widget should be place
-        return (cmEditor as any).addWidget(pos, createWidgetElement(linkHint.letter), false, 'over');
+        return (cmEditor as any).addWidget(pos, createWidgetElement(linkHint.letter, linkHint.type), false, 'over');
     }
 
     linkKeyMap.forEach(x => drawWidget(cmEditor, x));

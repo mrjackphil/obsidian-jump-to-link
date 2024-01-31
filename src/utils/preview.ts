@@ -4,7 +4,7 @@ import {getLinkHintLetters} from "./common";
 export function getPreviewLinkHints(previewViewEl: HTMLElement, letters: string ): PreviewLinkHint[] {
     const anchorEls = previewViewEl.querySelectorAll('a');
     const embedEls = previewViewEl.querySelectorAll('.internal-embed');
-
+    
     const linkHints: PreviewLinkHint[] = [];
     anchorEls.forEach((anchorEl, _i) => {
         if (checkIsPreviewElOnScreen(previewViewEl, anchorEl)) {
@@ -16,7 +16,7 @@ export function getPreviewLinkHints(previewViewEl: HTMLElement, letters: string 
             : 'external';
 
         const linkText = linkType === 'internal'
-            ? anchorEl.dataset['href']
+            ? anchorEl.dataset['href'] ?? anchorEl.href
             : anchorEl.href;
 
         let offsetParent = anchorEl.offsetParent as HTMLElement;
@@ -32,8 +32,8 @@ export function getPreviewLinkHints(previewViewEl: HTMLElement, letters: string 
                 offsetParent = offsetParent.offsetParent as HTMLElement;
             }
         }
-
         linkHints.push({
+            linkElement: anchorEl,
             letter: '',
             linkText: linkText,
             type: linkType,
@@ -66,6 +66,7 @@ export function getPreviewLinkHints(previewViewEl: HTMLElement, letters: string 
             }
 
             linkHints.push({
+                linkElement: linkEl,
                 letter: '',
                 linkText: linkText,
                 type: 'internal',
@@ -104,15 +105,19 @@ export function checkIsPreviewElOnScreen(parent: HTMLElement, el: HTMLElement) {
     return el.offsetTop < parent.scrollTop || el.offsetTop > parent.scrollTop + parent.offsetHeight
 }
 
-export function displayPreviewPopovers(markdownPreviewViewEl: HTMLElement, linkHints: PreviewLinkHint[]): void {
+export function displayPreviewPopovers(linkHints: PreviewLinkHint[]): HTMLElement[] {
+    const linkHintHtmlElements: HTMLElement[] = []
     for (let linkHint of linkHints) {
-        const linkHintEl = markdownPreviewViewEl.createEl('div');
-        linkHintEl.style.top = linkHint.top + 'px';
-        linkHintEl.style.left = linkHint.left + 'px';
-
-        linkHintEl.textContent = linkHint.letter;
-        linkHintEl.classList.add('jl');
-        linkHintEl.classList.add('popover');
+        const popoverElement = linkHint.linkElement.createEl('span');
+        linkHint.linkElement.style.position = 'relative'
+        popoverElement.style.top = '0px';
+        popoverElement.style.left = '0px';
+        popoverElement.textContent = linkHint.letter;
+        popoverElement.classList.add('jl');
+        popoverElement.classList.add('jl-'+linkHint.type);
+        popoverElement.classList.add('popover');
+        linkHintHtmlElements.push(popoverElement)
     }
+    return linkHintHtmlElements
 }
 

@@ -7,6 +7,7 @@ export interface LinkHintBase {
 }
 
 export interface PreviewLinkHint extends LinkHintBase {
+	linkElement: HTMLElement
 	left: number;
 	top: number;
 }
