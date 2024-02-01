@@ -353,7 +353,7 @@ export default class JumpToLink extends Plugin {
             contentElement.removeEventListener('keydown', handleKeyDown, { capture: true });
         };
 
-        if (linkHints.length === 1) {
+        if (linkHints.length === 1 && this.settings.jumpToLinkIfOneLinkOnly) {
             const heldShiftKey = this.prefixInfo?.shiftKey;
             this.handleHotkey(heldShiftKey, linkHints[0]);
             this.removePopovers(linkHintHtmlElements);
@@ -445,6 +445,19 @@ class SettingTab extends PluginSettingTab {
                 toggle.setValue(this.plugin.settings.lightspeedCaseSensitive)
                     .onChange(async (state) => {
                     this.plugin.settings.lightspeedCaseSensitive = state;
+                    await this.plugin.saveData(this.plugin.settings);
+                });
+            });
+
+        new Setting(containerEl)
+            .setName('Jump to Link If Only One Link In Page')
+            .setDesc(
+                'If enabled, auto jump to link if there is only one link in page'
+            )
+            .addToggle((toggle) => {
+                toggle.setValue(this.plugin.settings.jumpToLinkIfOneLinkOnly)
+                    .onChange(async (state) => {
+                    this.plugin.settings.jumpToLinkIfOneLinkOnly = state;
                     await this.plugin.saveData(this.plugin.settings);
                 });
             });
