@@ -279,8 +279,34 @@ export default class JumpToLink extends Plugin {
         this.isLinkHintActive = false;
     }
 
+    removePopoversWithoutPrefixEventKey(eventKey: string, linkHintHtmlElements: HTMLElement[] | undefined = []) {
+        const currentView = this.contentElement;
+
+        linkHintHtmlElements?.forEach(e => {
+            if (e.innerHTML.length == 2 && e.innerHTML[0] == eventKey) {
+                e.classList.add("matched");
+                return;
+            }
+
+            e.remove();
+        });
+
+        currentView.querySelectorAll('.jl.popover').forEach(e => {
+            if (e.innerHTML.length == 2 && e.innerHTML[0] == eventKey) {
+                e.classList.add("matched");
+                return;
+            }
+
+            e.remove();
+        });
+
+        if (this.mode == VIEW_MODE.SOURCE || this.mode == VIEW_MODE.LIVE_PREVIEW) {
+            (this.cmEditor as EditorView).plugin(this.markViewPlugin).filterWithEventKey(eventKey);
+        }
+        this.app.workspace.updateOptions();
+    }
+
     handleActions(linkHints: LinkHintBase[], linkHintHtmlElements?: HTMLElement[]): void {
-        console.log('handleActions', linkHints)
         const contentElement = this.contentElement
         if (!linkHints.length) {
             return;
@@ -308,6 +334,8 @@ export default class JumpToLink extends Plugin {
                     event.preventDefault();
                     event.stopPropagation();
                     event.stopImmediatePropagation();
+
+                    this.removePopoversWithoutPrefixEventKey(eventKey, linkHintHtmlElements);
 
                     return;
                 }
