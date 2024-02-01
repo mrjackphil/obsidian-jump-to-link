@@ -384,22 +384,6 @@ class SettingTab extends PluginSettingTab {
 
         containerEl.createEl('h2', {text: 'Settings for Jump To Link.'});
 
-        /* Modal mode deprecated */
-        // new Setting(containerEl)
-        //     .setName('Presentation')
-        //     .setDesc('How to show links')
-        //     .addDropdown(cb => { cb
-        //         .addOptions({
-        //             "popovers": 'Popovers',
-        //             "modal": 'Modal'
-        //         })
-        //         .setValue(this.plugin.settings.mode)
-        //         .onChange((value: LinkHintMode) => {
-        //             this.plugin.settings.mode = value;
-        //             this.plugin.saveData(this.plugin.settings);
-        //         })
-        //     });
-
         new Setting(containerEl)
             .setName('Characters used for link hints')
             .setDesc('The characters placed next to each link after enter link-hint mode.')
