@@ -26,7 +26,6 @@ export default class JumpToLink extends Plugin {
     isLinkHintActive: boolean = false;
     settings: Settings;
     prefixInfo: { prefix: string, shiftKey: boolean } | undefined = undefined;
-    //markPlugin: MarkPlugin
     markViewPlugin: ViewPlugin<any>
     cmEditor: Editor | EditorView
     currentView: View
@@ -117,7 +116,7 @@ export default class JumpToLink extends Plugin {
             return VIEW_MODE.LEGACY;
         } else if (currentView.getState().mode === 'source') {
             const isLivePreview = (<{ editor?: { cm: EditorView } }>currentView).editor.cm.state.field(editorLivePreviewField)
-            if(isLivePreview) return VIEW_MODE.LIVE_PREVIEW
+            if (isLivePreview) return VIEW_MODE.LIVE_PREVIEW;
             return VIEW_MODE.SOURCE;
         }
 
@@ -141,7 +140,7 @@ export default class JumpToLink extends Plugin {
                 const [previewLinkHints, sourceLinkHints, linkHintHtmlElements] = new LivePreviewLinkProcessor(previewViewEl, cm6Editor, letters).init();
                 cm6Editor.plugin(this.markViewPlugin).setLinks(sourceLinkHints);
                 this.app.workspace.updateOptions();
-                this.handleActions([...previewLinkHints, ...sourceLinkHints], linkHintHtmlElements );
+                this.handleActions([...previewLinkHints, ...sourceLinkHints], linkHintHtmlElements);
                 break;
             }
             case VIEW_MODE.PREVIEW: {
@@ -265,16 +264,17 @@ export default class JumpToLink extends Plugin {
         }
     }
 
-    removePopovers(linkHintHtmlElements?: HTMLElement[]) {
+    removePopovers(linkHintHtmlElements: HTMLElement[] | undefined = []) {
         const currentView = this.contentElement;
 
         currentView.removeEventListener('click', () => this.removePopovers(linkHintHtmlElements))
-        linkHintHtmlElements.forEach(e => e.remove());
+        linkHintHtmlElements?.forEach(e => e.remove());
         currentView.querySelectorAll('.jl.popover').forEach(e => e.remove());
-        currentView.querySelectorAll('#jl-modal').forEach(e => e.remove());
 
         this.prefixInfo = undefined;
-        (this.cmEditor as EditorView).plugin(this.markViewPlugin).clean();
+        if (this.mode == VIEW_MODE.SOURCE || this.mode == VIEW_MODE.LIVE_PREVIEW) {
+            (this.cmEditor as EditorView).plugin(this.markViewPlugin).clean();
+        }
         this.app.workspace.updateOptions();
         this.isLinkHintActive = false;
     }
