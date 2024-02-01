@@ -26,7 +26,6 @@ export default class JumpToLink extends Plugin {
     isLinkHintActive: boolean = false;
     settings: Settings;
     prefixInfo: { prefix: string, shiftKey: boolean } | undefined = undefined;
-    //markPlugin: MarkPlugin
     markViewPlugin: ViewPlugin<any>
     cmEditor: Editor | EditorView
     currentView: View
@@ -117,7 +116,7 @@ export default class JumpToLink extends Plugin {
             return VIEW_MODE.LEGACY;
         } else if (currentView.getState().mode === 'source') {
             const isLivePreview = (<{ editor?: { cm: EditorView } }>currentView).editor.cm.state.field(editorLivePreviewField)
-            if(isLivePreview) return VIEW_MODE.LIVE_PREVIEW
+            if (isLivePreview) return VIEW_MODE.LIVE_PREVIEW;
             return VIEW_MODE.SOURCE;
         }
 
@@ -141,7 +140,7 @@ export default class JumpToLink extends Plugin {
                 const [previewLinkHints, sourceLinkHints, linkHintHtmlElements] = new LivePreviewLinkProcessor(previewViewEl, cm6Editor, letters).init();
                 cm6Editor.plugin(this.markViewPlugin).setLinks(sourceLinkHints);
                 this.app.workspace.updateOptions();
-                this.handleActions([...previewLinkHints, ...sourceLinkHints], linkHintHtmlElements );
+                this.handleActions([...previewLinkHints, ...sourceLinkHints], linkHintHtmlElements);
                 break;
             }
             case VIEW_MODE.PREVIEW: {
@@ -265,22 +264,49 @@ export default class JumpToLink extends Plugin {
         }
     }
 
-    removePopovers(linkHintHtmlElements?: HTMLElement[]) {
+    removePopovers(linkHintHtmlElements: HTMLElement[] | undefined = []) {
         const currentView = this.contentElement;
 
         currentView.removeEventListener('click', () => this.removePopovers(linkHintHtmlElements))
-        linkHintHtmlElements.forEach(e => e.remove());
+        linkHintHtmlElements?.forEach(e => e.remove());
         currentView.querySelectorAll('.jl.popover').forEach(e => e.remove());
-        currentView.querySelectorAll('#jl-modal').forEach(e => e.remove());
 
         this.prefixInfo = undefined;
-        (this.cmEditor as EditorView).plugin(this.markViewPlugin).clean();
+        if (this.mode == VIEW_MODE.SOURCE || this.mode == VIEW_MODE.LIVE_PREVIEW) {
+            (this.cmEditor as EditorView).plugin(this.markViewPlugin).clean();
+        }
         this.app.workspace.updateOptions();
         this.isLinkHintActive = false;
     }
 
+    removePopoversWithoutPrefixEventKey(eventKey: string, linkHintHtmlElements: HTMLElement[] | undefined = []) {
+        const currentView = this.contentElement;
+
+        linkHintHtmlElements?.forEach(e => {
+            if (e.innerHTML.length == 2 && e.innerHTML[0] == eventKey) {
+                e.classList.add("matched");
+                return;
+            }
+
+            e.remove();
+        });
+
+        currentView.querySelectorAll('.jl.popover').forEach(e => {
+            if (e.innerHTML.length == 2 && e.innerHTML[0] == eventKey) {
+                e.classList.add("matched");
+                return;
+            }
+
+            e.remove();
+        });
+
+        if (this.mode == VIEW_MODE.SOURCE || this.mode == VIEW_MODE.LIVE_PREVIEW) {
+            (this.cmEditor as EditorView).plugin(this.markViewPlugin).filterWithEventKey(eventKey);
+        }
+        this.app.workspace.updateOptions();
+    }
+
     handleActions(linkHints: LinkHintBase[], linkHintHtmlElements?: HTMLElement[]): void {
-        console.log('handleActions', linkHints)
         const contentElement = this.contentElement
         if (!linkHints.length) {
             return;
@@ -309,6 +335,8 @@ export default class JumpToLink extends Plugin {
                     event.stopPropagation();
                     event.stopImmediatePropagation();
 
+                    this.removePopoversWithoutPrefixEventKey(eventKey, linkHintHtmlElements);
+
                     return;
                 }
             }
@@ -325,7 +353,7 @@ export default class JumpToLink extends Plugin {
             contentElement.removeEventListener('keydown', handleKeyDown, { capture: true });
         };
 
-        if (linkHints.length === 1) {
+        if (linkHints.length === 1 && this.settings.jumpToLinkIfOneLinkOnly) {
             const heldShiftKey = this.prefixInfo?.shiftKey;
             this.handleHotkey(heldShiftKey, linkHints[0]);
             this.removePopovers(linkHintHtmlElements);
@@ -384,22 +412,6 @@ class SettingTab extends PluginSettingTab {
 
         containerEl.createEl('h2', {text: 'Settings for Jump To Link.'});
 
-        /* Modal mode deprecated */
-        // new Setting(containerEl)
-        //     .setName('Presentation')
-        //     .setDesc('How to show links')
-        //     .addDropdown(cb => { cb
-        //         .addOptions({
-        //             "popovers": 'Popovers',
-        //             "modal": 'Modal'
-        //         })
-        //         .setValue(this.plugin.settings.mode)
-        //         .onChange((value: LinkHintMode) => {
-        //             this.plugin.settings.mode = value;
-        //             this.plugin.saveData(this.plugin.settings);
-        //         })
-        //     });
-
         new Setting(containerEl)
             .setName('Characters used for link hints')
             .setDesc('The characters placed next to each link after enter link-hint mode.')
@@ -433,6 +445,19 @@ class SettingTab extends PluginSettingTab {
                 toggle.setValue(this.plugin.settings.lightspeedCaseSensitive)
                     .onChange(async (state) => {
                     this.plugin.settings.lightspeedCaseSensitive = state;
+                    await this.plugin.saveData(this.plugin.settings);
+                });
+            });
+
+        new Setting(containerEl)
+            .setName('Jump to Link If Only One Link In Page')
+            .setDesc(
+                'If enabled, auto jump to link if there is only one link in page'
+            )
+            .addToggle((toggle) => {
+                toggle.setValue(this.plugin.settings.jumpToLinkIfOneLinkOnly)
+                    .onChange(async (state) => {
+                    this.plugin.settings.jumpToLinkIfOneLinkOnly = state;
                     await this.plugin.saveData(this.plugin.settings);
                 });
             });

@@ -13,6 +13,11 @@
     padding: 1px 3px;
     border-radius: 3px;
 }
+
+.jl.popover.matched::first-letter {
+    color: rgb(143 107 7);
+}
+
 .theme-dark, .theme-light {
     --jump-to-link-lightspeed-color: var(--text-muted);
 }

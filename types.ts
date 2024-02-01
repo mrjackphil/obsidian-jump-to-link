@@ -21,6 +21,7 @@ export class Settings {
 	letters: string = 'sadfjklewcmpgh';
 	jumpToAnywhereRegex: string = '\\b\\w{3,}\\b';
 	lightspeedCaseSensitive: boolean = false;
+	jumpToLinkIfOneLinkOnly: boolean = true;
 }
 
 export class Processor {

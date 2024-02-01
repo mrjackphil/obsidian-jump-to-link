@@ -4,7 +4,7 @@ import {getLinkHintLetters} from "./common";
 export function getPreviewLinkHints(previewViewEl: HTMLElement, letters: string ): PreviewLinkHint[] {
     const anchorEls = previewViewEl.querySelectorAll('a');
     const embedEls = previewViewEl.querySelectorAll('.internal-embed');
-    
+
     const linkHints: PreviewLinkHint[] = [];
     anchorEls.forEach((anchorEl, _i) => {
         if (checkIsPreviewElOnScreen(previewViewEl, anchorEl)) {
