@@ -172,12 +172,11 @@ export default class JumpToLink extends Plugin {
 
         switch (mode) {
             case VIEW_MODE.SOURCE:
-                const cm6Editor = this.cmEditor as EditorView
-                const livePreviewLinks = new CM6RegexProcessor(cm6Editor, letters, whatToLookAt, caseSensitive).init();
-                cm6Editor.plugin(this.markViewPlugin).setLinks(livePreviewLinks);
-                this.app.workspace.updateOptions();
-                this.handleActions(livePreviewLinks);
+                this.handleMarkdownRegex(letters, whatToLookAt, caseSensitive);
                 break;
+            case VIEW_MODE.LIVE_PREVIEW:
+                this.handleMarkdownRegex(letters, whatToLookAt, caseSensitive);
+                break
             case VIEW_MODE.PREVIEW:
                 break;
             case VIEW_MODE.LEGACY:
@@ -190,6 +189,15 @@ export default class JumpToLink extends Plugin {
         }
 
     }
+
+    handleMarkdownRegex = (letters: string, whatToLookAt: string, caseSensitive: boolean) => {
+        const cm6Editor = this.cmEditor as EditorView
+        const livePreviewLinks = new CM6RegexProcessor(cm6Editor, letters, whatToLookAt, caseSensitive).init();
+        cm6Editor.plugin(this.markViewPlugin).setLinks(livePreviewLinks);
+        this.app.workspace.updateOptions();
+        this.handleActions(livePreviewLinks);
+    }
+
     // adapted from: https://github.com/mrjackphil/obsidian-jump-to-link/issues/35#issuecomment-1085905668
     handleLightspeedJump() {
         // get all text color
