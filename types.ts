@@ -22,6 +22,7 @@ export class Settings {
 	jumpToAnywhereRegex: string = '\\b\\w{3,}\\b';
 	lightspeedCaseSensitive: boolean = false;
 	jumpToLinkIfOneLinkOnly: boolean = true;
+	lightspeedJumpToStartOfWord: boolean = true;
 }
 
 export class Processor {

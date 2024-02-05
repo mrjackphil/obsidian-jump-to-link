@@ -235,7 +235,9 @@ export default class JumpToLink extends Plugin {
 
             // stop when length of array is equal to 2
             if (keyArray.length === 2) {
-                this.handleJumpToRegex("\\b" + keyArray.join(""), this.settings.lightspeedCaseSensitive);
+                const stringToSearch = this.settings.lightspeedJumpToStartOfWord ? "\\b" + keyArray.join("") : keyArray.join("");
+
+                this.handleJumpToRegex(stringToSearch, this.settings.lightspeedCaseSensitive);
 
                 // removing eventListener after proceeded
                 contentEl.removeEventListener("keydown", grabKey, { capture: true });
@@ -466,6 +468,19 @@ class SettingTab extends PluginSettingTab {
                 toggle.setValue(this.plugin.settings.jumpToLinkIfOneLinkOnly)
                     .onChange(async (state) => {
                     this.plugin.settings.jumpToLinkIfOneLinkOnly = state;
+                    await this.plugin.saveData(this.plugin.settings);
+                });
+            });
+
+        new Setting(containerEl)
+            .setName('Lightspeed only jumps to start of words')
+            .setDesc(
+                'If enabled, lightspeed jumps will only target characters occuring at the start of words.'
+            )
+            .addToggle((toggle) => {
+                toggle.setValue(this.plugin.settings.lightspeedJumpToStartOfWord)
+                    .onChange(async (state) => {
+                    this.plugin.settings.lightspeedJumpToStartOfWord = state;
                     await this.plugin.saveData(this.plugin.settings);
                 });
             });
