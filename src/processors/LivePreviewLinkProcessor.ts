@@ -20,8 +20,8 @@ export default class LivePreviewLinkProcessor {
         const links = getPreviewLinkHints(view, alphabet);
         const sourceLinks = this.getSourceLinkHints();
         const linkHintLetters = getLinkHintLetters(alphabet, links.length + sourceLinks.length);
-        const linksRemapped = links.map((link, idx) => ({...link, letter: linkHintLetters[idx]}))
-        const sourceLinksRemapped = sourceLinks.map((link, idx) => ({...link, letter: linkHintLetters[idx + links.length]}))
+        const linksRemapped = links.map((link, idx) => ({...link, letter: linkHintLetters[idx]})).filter(link => link.letter)
+        const sourceLinksRemapped = sourceLinks.map((link, idx) => ({...link, letter: linkHintLetters[idx + links.length]})).filter(link => link.letter)
         const linkHintHtmlElements = displayPreviewPopovers(linksRemapped);
         return [linksRemapped, sourceLinksRemapped, linkHintHtmlElements];
     }
