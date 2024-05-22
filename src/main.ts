@@ -326,7 +326,7 @@ export default class JumpToLink extends Plugin {
         linkHints.forEach(x => linkHintMap[x.letter] = x);
 
         const handleKeyDown = (event: KeyboardEvent): void => {
-            if (['Shift', 'Control', 'CapsLock', 'ScrollLock'].includes(event.key)) {
+            if (['Shift', 'Control', 'CapsLock', 'ScrollLock', 'GroupNext'].includes(event.key)) {
                 return;
             }
 
