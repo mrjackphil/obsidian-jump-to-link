@@ -38,7 +38,7 @@ You can either assign a hotkey, or use it in combination with the [Obsidian vimr
 
 ```vimrc
 exmap jumpToLink obcommand mrj-jump-to-link:activate-lightspeed-jump
-nmap gs :jumpToLink
+nmap gs :jumpToLink<CR>
 ```
 
 The idea and original code is [from @kohane27](https://github.com/mrjackphil/obsidian-jump-to-link/issues/35#issuecomment-1085905668).
