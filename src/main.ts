@@ -248,7 +248,9 @@ export default class JumpToLink extends Plugin {
     }
 
     handleHotkey(heldShiftKey: boolean, link: SourceLinkHint | LinkHintBase) {
-        if (link.type === 'internal') {
+        if (link.linkText === undefined && link.linkElement) {
+            link.linkElement.click();
+        } else if (link.type === 'internal') {
             const file = this.app.workspace.getActiveFile()
             if (file) {
                 // the second argument is for the link resolution
