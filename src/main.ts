@@ -233,8 +233,8 @@ export default class JumpToLink extends Plugin {
                 }
             }
 
-            // stop when length of array is equal to 2
-            if (keyArray.length === 2) {
+            // stop when length of array is equal to lightspeedCharacterCount
+            if (keyArray.length === this.settings.lightspeedCharacterCount) {
                 const stringToSearch = this.settings.lightspeedJumpToStartOfWord ? "\\b" + keyArray.join("") : keyArray.join("");
 
                 this.handleJumpToRegex(stringToSearch, this.settings.lightspeedCaseSensitive);
@@ -486,5 +486,23 @@ class SettingTab extends PluginSettingTab {
                     await this.plugin.saveData(this.plugin.settings);
                 });
             });
+
+        new Setting(containerEl)
+            .setName('Number of characters for Lightspeed jump')
+            .setDesc(
+                'Determines how many characters you need to type to perform a Lightspeed jump.'
+            )
+            .addText(
+                (text) =>
+                    (text
+                        .setValue(String(this.plugin.settings.lightspeedCharacterCount))
+                        .onChange(async (value) => {
+                            const num = Number(value);
+                            if (!isNaN(num)) {
+                                this.plugin.settings.lightspeedCharacterCount = num;
+                                await this.plugin.saveData(this.plugin.settings);
+                            }
+                        }).inputEl.type = "number")
+            );
     }
 }
