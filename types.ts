@@ -23,6 +23,7 @@ export class Settings {
 	lightspeedCaseSensitive: boolean = false;
 	jumpToLinkIfOneLinkOnly: boolean = true;
 	lightspeedJumpToStartOfWord: boolean = true;
+	lightspeedCharacterCount: number = 2;
 }
 
 export class Processor {
