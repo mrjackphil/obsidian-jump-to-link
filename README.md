@@ -26,7 +26,7 @@ Quickly navigate between links, or jump to any word on the page using hotkeys.
 - Jump to Anywhere works both in regular editor mode, and in VIM mode!
 - Custom RegEx can be configured to user preference
 - Default configuration adds a label on words 3 characters or greater: [Regex: `\b\w{3,}\b`]
-- Suggested `Characters used for link hints` setting for Jump to Anywhere: `asdfghhjklqwertyuiopzxcvbnm`
+- Suggested `Characters used for link hints` setting for Jump to Anywhere: `asdfghjklqwertyuiopzxcvbnm`
   - These settings ensure that all 26 letters are available for jumping in documents with large amounts of text.
   - If there are more matches than available letters, the label will show `undefined` and it will not be possible to jump there.
 
