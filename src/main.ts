@@ -249,7 +249,13 @@ export default class JumpToLink extends Plugin {
 
     handleHotkey(heldShiftKey: boolean, link: SourceLinkHint | LinkHintBase) {
         if ((link.linkText === undefined || link.linkText === '') && link.linkElement) {
-            link.linkElement.click();
+            const event = new MouseEvent("click", {
+                bubbles: true,
+                cancelable: true,
+                view: window,
+                metaKey: heldShiftKey,
+            });
+            link.linkElement.dispatchEvent(event);
         } else if (link.type === 'internal') {
             const file = this.app.workspace.getActiveFile()
             if (file) {
