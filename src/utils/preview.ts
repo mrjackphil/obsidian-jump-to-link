@@ -102,6 +102,7 @@ export function getPreviewLinkHints(previewViewEl: HTMLElement, letters: string 
 }
 
 export function checkIsPreviewElOnScreen(parent: HTMLElement, el: HTMLElement) {
+    el = el.closest('[data-view-type="table"], table') || el;
     return el.offsetTop < parent.scrollTop || el.offsetTop > parent.scrollTop + parent.offsetHeight
 }
 
