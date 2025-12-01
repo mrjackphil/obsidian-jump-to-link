@@ -248,7 +248,7 @@ export default class JumpToLink extends Plugin {
     }
 
     handleHotkey(heldShiftKey: boolean, link: SourceLinkHint | LinkHintBase) {
-        if ((link.linkText === undefined || link.linkText === '') && link.linkElement) {
+        if (link.linkElement) {
             const event = new MouseEvent("click", {
                 bubbles: true,
                 cancelable: true,
