@@ -115,7 +115,7 @@ export default class JumpToLink extends Plugin {
         } else if (isLegacy) {
             return VIEW_MODE.LEGACY;
         } else if (currentView.getState().mode === 'source') {
-            const isLivePreview = (<{ editor?: { cm: EditorView } }>currentView).editor.cm.state.field(editorLivePreviewField)
+            const isLivePreview = (<{ editor?: { cm: EditorView } }>currentView).editor.cm.state?.field(editorLivePreviewField)
             if (isLivePreview) return VIEW_MODE.LIVE_PREVIEW;
             return VIEW_MODE.SOURCE;
         }
