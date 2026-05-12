@@ -77,7 +77,8 @@ export default class JumpToLink extends Plugin {
             return;
         }
 
-        const activeViewOfType = app.workspace.getActiveViewOfType(MarkdownView)
+        const activeViewOfType = this.app.workspace.getActiveViewOfType(MarkdownView)
+        if (!activeViewOfType) { return; }
         const currentView = this.currentView = activeViewOfType.leaf.view;
         const mode = this.mode = this.getMode(this.currentView);
         this.contentElement = activeViewOfType.contentEl
@@ -115,8 +116,12 @@ export default class JumpToLink extends Plugin {
         } else if (isLegacy) {
             return VIEW_MODE.LEGACY;
         } else if (currentView.getState().mode === 'source') {
-            const isLivePreview = (<{ editor?: { cm: EditorView } }>currentView).editor.cm.state?.field(editorLivePreviewField)
-            if (isLivePreview) return VIEW_MODE.LIVE_PREVIEW;
+            try {
+                const isLivePreview = (<{ editor?: { cm: EditorView } }>currentView).editor.cm.state?.field(editorLivePreviewField)
+                if (isLivePreview) return VIEW_MODE.LIVE_PREVIEW;
+            } catch (e) {
+                console.error(e);
+            }
             return VIEW_MODE.SOURCE;
         }
 
