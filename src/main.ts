@@ -1,7 +1,7 @@
 import {App, MarkdownView, Plugin, PluginSettingTab, Setting, View, editorLivePreviewField} from 'obsidian';
-import {Editor} from 'codemirror';
+import {Editor} from 'obsidian';
 import {EditorSelection} from "@codemirror/state";
-import {EditorView, ViewPlugin} from "@codemirror/view";
+import {EditorView, ViewPlugin, DecorationSet} from "@codemirror/view";
 import {LinkHintBase, Settings, SourceLinkHint} from 'types';
 import {MarkPlugin} from "./cm6-widget/MarkPlugin";
 
@@ -40,7 +40,7 @@ export default class JumpToLink extends Plugin {
         this.addSettingTab(new SettingTab(this.app, this));
 
         const markViewPlugin = this.markViewPlugin = ViewPlugin.fromClass(MarkPlugin, {
-            decorations: v => v.decorations
+            decorations: (v: DecorationSet) => v.decorations
         });
         this.registerEditorExtension([markViewPlugin])
 

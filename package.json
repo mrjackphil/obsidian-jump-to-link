@@ -11,6 +11,8 @@
   "author": "MrJackphil",
   "license": "MIT",
   "devDependencies": {
+    "@codemirror/state": "6.5.0",
+    "@codemirror/view": "6.38.6",
     "@rollup/plugin-commonjs": "^21.0.2",
     "@rollup/plugin-node-resolve": "^13.1.3",
     "@rollup/plugin-typescript": "^8.3.1",
