@@ -2,7 +2,7 @@ import {LinkHintType, PreviewLinkHint} from "../../types";
 import {getLinkHintLetters} from "./common";
 
 export function getPreviewLinkHints(previewViewEl: HTMLElement, letters: string ): PreviewLinkHint[] {
-    const anchorEls = previewViewEl.querySelectorAll('a, .metadata-link-inner');
+    const anchorEls = previewViewEl.querySelectorAll('a, .metadata-link-inner, .internal-link, .external-link');
     const embedEls = previewViewEl.querySelectorAll('.internal-embed');
 
     const linkHints: PreviewLinkHint[] = [];
@@ -102,7 +102,7 @@ export function getPreviewLinkHints(previewViewEl: HTMLElement, letters: string 
 }
 
 export function checkIsPreviewElOnScreen(parent: HTMLElement, el: HTMLElement) {
-    el = el.closest('[data-view-type="table"], table') || el;
+    el = el.closest('[data-view-type="table"], table, .basis-table') || el;
     return el.offsetTop < parent.scrollTop || el.offsetTop > parent.scrollTop + parent.offsetHeight
 }
 
