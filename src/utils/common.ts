@@ -58,15 +58,15 @@ export function getMDHintLinks(content: string, offset: number, letters: string)
     // expecting either [[Link]] or [[Link|Title]]
     const regExInternal = /\[\[(.+?)(\|.+?)?]]/g;
     // expecting [Title](../example.md)
-    const regExMdInternal = /\[[^\[\]]+?\]\(((\.\.|\w|\d).+?)\)/g;
+    const regExMdInternal = /\[[^[\]]+?\]\(((\.\.|\w|\d).+?)\)/g;
     // expecting [Title](file://link), [Title](https://link) or any other [Jira-123](jira://bla-bla) link
-    const regExExternal = /\[[^\[\]]+?\]\((.+?:\/\/.+?)\)/g;
+    const regExExternal = /\[[^[\]]+?\]\((.+?:\/\/.+?)\)/g;
     // expecting http://hogehoge or https://hogehoge
     const regExUrl = /( |\n|^)(https?:\/\/[^ \n]+)/g;
 
     type IndexedLink = { index: number, type: 'internal' | 'external', linkText: string }
-    let indexes = new Set<number>()
-    let linksWithIndex: IndexedLink[] = [];
+    const indexes = new Set<number>()
+    const linksWithIndex: IndexedLink[] = [];
     let regExResult;
 
     const addLinkToArray = (link: IndexedLink) => {
@@ -75,23 +75,23 @@ export function getMDHintLinks(content: string, offset: number, letters: string)
         linksWithIndex.push(link)
     }
 
-    while(regExResult = regExInternal.exec(content)) {
+    while((regExResult = regExInternal.exec(content)) !== null) {
         const linkText = regExResult[1]?.trim();
         addLinkToArray({ index: regExResult.index + offset, type: 'internal', linkText });
     }
 
     // External Link above internal, to prefer type external over interal in case of a dupe
-    while(regExResult = regExExternal.exec(content)) {
+    while((regExResult = regExExternal.exec(content)) !== null) {
         const linkText = regExResult[1];
         addLinkToArray({ index: regExResult.index + offset, type: 'external', linkText })
     }
 
-    while(regExResult = regExMdInternal.exec(content)) {
+    while((regExResult = regExMdInternal.exec(content)) !== null) {
         const linkText = regExResult[1];
         addLinkToArray({ index: regExResult.index + offset, type: 'internal', linkText });
     }
 
-    while(regExResult = regExUrl.exec(content)) {
+    while((regExResult = regExUrl.exec(content)) !== null) {
         const linkText = regExResult[2];
         addLinkToArray({ index: regExResult.index + offset + 1, type: 'external', linkText })
     }
@@ -131,4 +131,3 @@ export function displaySourcePopovers(cmEditor: Editor, linkKeyMap: SourceLinkHi
 
     linkKeyMap.forEach(x => drawWidget(cmEditor, x));
 }
-
