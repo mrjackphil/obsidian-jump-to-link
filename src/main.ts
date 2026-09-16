@@ -83,7 +83,7 @@ export default class JumpToLink extends Plugin {
                 break;
             case VIEW_MODE.LIVE_PREVIEW:
             case VIEW_MODE.SOURCE:
-                this.cmEditor = (<{ editor?: { cm: EditorView } }>currentView).editor.cm;
+                this.cmEditor = (<ViewWithCM6>currentView).editor.cm;
                 break;
         }
 
@@ -101,8 +101,7 @@ export default class JumpToLink extends Plugin {
     }
 
     getMode(currentView: View): VIEW_MODE {
-        // @ts-ignore
-        const isLegacy = this.app.vault.getConfig("legacyEditor")
+        const isLegacy = (this.app.vault as unknown as { getConfig(key: string): unknown }).getConfig("legacyEditor")
 
         if (currentView.getState().mode === 'preview') {
             return VIEW_MODE.PREVIEW;
@@ -110,7 +109,7 @@ export default class JumpToLink extends Plugin {
             return VIEW_MODE.LEGACY;
         } else if (currentView.getState().mode === 'source') {
             try {
-                const isLivePreview = (<{ editor?: { cm: EditorView } }>currentView).editor.cm.state?.field(editorLivePreviewField)
+                const isLivePreview = (<ViewWithCM6>currentView).editor.cm.state?.field(editorLivePreviewField)
                 if (isLivePreview) return VIEW_MODE.LIVE_PREVIEW;
             } catch (e) {
                 console.error(e);
@@ -127,7 +126,7 @@ export default class JumpToLink extends Plugin {
 
         switch (mode) {
             case VIEW_MODE.LEGACY: {
-                const cmEditor = this.cmEditor as Editor;
+                const cmEditor = this.cmEditor as CM5Editor;
                 const sourceLinkHints = new LegacySourceLinkProcessor(cmEditor, letters).init();
                 this.handleActions(sourceLinkHints);
                 break;
@@ -393,7 +392,7 @@ export default class JumpToLink extends Plugin {
             const editor = this.app.workspace.getActiveViewOfType(MarkdownView)?.editor;
             const cm: Editor | undefined = (editor as any)?.cm?.cm;
 
-            if (cm && !(cm as any)._handlers.cursorActivity.includes(updateSelection)) {
+            if (cm && !cm._handlers.cursorActivity.includes(updateSelection)) {
                 cm.on("cursorActivity", updateSelection);
                 this.register(() => cm.off("cursorActivity", updateSelection));
             }
@@ -403,7 +402,7 @@ export default class JumpToLink extends Plugin {
         watchForChanges();
     }
 
-    updateSelection(editor: Editor) {
+    updateSelection(editor: CM5Editor) {
         const anchor = editor.listSelections()[0]?.anchor
         this.currentCursor = {
             anchor: anchor ? editor.indexFromPos(anchor) : undefined,

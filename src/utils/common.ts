@@ -109,19 +109,24 @@ export function getMDHintLinks(content: string, offset: number, letters: string)
 }
 
 export function createWidgetElement(content: string, type: string) {
-    const linkHintEl = activeDocument.createElement('div');
-    linkHintEl.classList.add('jl');
-    linkHintEl.classList.add('jl-'+type);
-    linkHintEl.classList.add('popover');
-    linkHintEl.innerHTML = content;
-    return linkHintEl;
+    return activeDocument.createDiv({
+        text: content,
+        cls: ['jl', 'jl-' + type, 'popover'],
+    });
+}
+
+/**
+ * CodeMirror 5 exposes `addWidget` but it is missing from the published typings,
+ * and its fourth parameter (placement) is undocumented.
+ */
+interface LegacyWidgetEditor {
+    addWidget(pos: { line: number, ch: number }, node: HTMLElement, scrollIntoView: boolean, vert?: string): void;
 }
 
 export function displaySourcePopovers(cmEditor: Editor, linkKeyMap: SourceLinkHint[]): void {
     const drawWidget = (cmEditor: Editor, linkHint: SourceLinkHint) => {
         const pos = cmEditor.posFromIndex(linkHint.index);
-        // the fourth parameter is undocumented. it specifies where the widget should be place
-        return (cmEditor as any).addWidget(pos, createWidgetElement(linkHint.letter, linkHint.type), false, 'over');
+        (cmEditor as unknown as LegacyWidgetEditor).addWidget(pos, createWidgetElement(linkHint.letter, linkHint.type), false, 'over');
     }
 
     linkKeyMap.forEach(x => drawWidget(cmEditor, x));
