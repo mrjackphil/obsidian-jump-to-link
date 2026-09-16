@@ -68,10 +68,6 @@ export default class JumpToLink extends Plugin {
         });
     }
 
-    onunload() {
-        console.log('unloading jump to links plugin');
-    }
-
     action(type: 'link' | 'regexp' | 'lightspeed') {
         if (this.isLinkHintActive) {
             return;
