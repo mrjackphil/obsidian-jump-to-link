@@ -1,7 +1,7 @@
 {
   "id": "mrj-jump-to-link",
   "name": "Jump to link",
-  "version": "0.5.16",
+  "version": "0.5.17",
   "description": "Open a link in the current document or navigate by regex in editor mode using a hotkey.",
   "isDesktopOnly": false,
   "author": "MrJackphil",
