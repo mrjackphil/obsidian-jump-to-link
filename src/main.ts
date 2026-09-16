@@ -198,16 +198,19 @@ export default class JumpToLink extends Plugin {
 
     // adapted from: https://github.com/mrjackphil/obsidian-jump-to-link/issues/35#issuecomment-1085905668
     handleLightspeedJump() {
-        // get all text color
-        const { contentEl } = app.workspace.getActiveViewOfType(MarkdownView);
-        if (!contentEl) {return}
+        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+        if (!activeView) { return }
+
+        const { contentEl } = activeView;
+        if (!contentEl) { return }
 
         // this element doesn't exist in cm5/has a different class, so lightspeed will not work in cm5
-        const contentContainerColor = contentEl.getElementsByClassName("cm-contentContainer");
-        const originalColor = (contentContainerColor[0] as HTMLElement).style.color;
+        const contentContainer = contentEl.getElementsByClassName("cm-contentContainer")[0];
+        if (!contentContainer) { return }
 
-        // change all text color to gray
-        (contentContainerColor[0] as HTMLElement).style.color = 'var(--jump-to-link-lightspeed-color)';
+        // dim all the text while waiting for the characters to jump to
+        contentContainer.classList.add('jl-lightspeed');
+        const restoreTextColor = () => contentContainer.classList.remove('jl-lightspeed');
 
         const keyArray: string[] = [];
         const grabKey = (event: KeyboardEvent) => {
@@ -216,7 +219,7 @@ export default class JumpToLink extends Plugin {
             // handle Escape to reject the mode
             if (event.key === 'Escape') {
                 contentEl.removeEventListener("keydown", grabKey, { capture: true });
-                (contentContainerColor[0] as HTMLElement).style.color = originalColor;
+                restoreTextColor();
             }
 
             // test if keypress is capitalized
@@ -499,8 +502,8 @@ class SettingTab extends PluginSettingTab {
                 'Determines how many characters you need to type to perform a Lightspeed jump.'
             )
             .addText(
-                (text) =>
-                    (text
+                (text) => {
+                    text
                         .setValue(String(this.plugin.settings.lightspeedCharacterCount))
                         .onChange(async (value) => {
                             const num = Number(value);
@@ -508,7 +511,8 @@ class SettingTab extends PluginSettingTab {
                                 this.plugin.settings.lightspeedCharacterCount = num;
                                 await this.plugin.saveData(this.plugin.settings);
                             }
-                        }).inputEl.type = "number")
+                        }).inputEl.type = "number";
+                }
             );
     }
 }
