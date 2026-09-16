@@ -3,6 +3,7 @@ import {EditorView} from "@codemirror/view";
 import {displayPreviewPopovers, getPreviewLinkHints} from "../utils/preview";
 
 import {getLinkHintLetters, getMDHintLinks} from "../utils/common";
+import {getVisibleRange} from "../utils/cm6-internals";
 
 export default class LivePreviewLinkProcessor {
     view: HTMLElement;
@@ -27,21 +28,7 @@ export default class LivePreviewLinkProcessor {
     }
 
     public getVisibleLines() {
-        const { cmEditor } = this;
-        let { from, to } = cmEditor.viewport;
-
-        // For CM6 get real visible lines top
-        // @ts-ignore
-        if (cmEditor.viewState?.pixelViewport?.top) {
-            // @ts-ignore
-            const pixelOffsetTop = cmEditor.viewState.pixelViewport.top
-            // @ts-ignore
-            const lines = cmEditor.viewState.viewportLines
-            // @ts-ignore
-            from = lines.filter(line => line.top > pixelOffsetTop)[0]?.from
-        }
-        const content = cmEditor.state.sliceDoc(from, to);
-        return { index: from, content };
+        return getVisibleRange(this.cmEditor);
     }
 
     private getSourceLinkHints = (): SourceLinkHint[] => {

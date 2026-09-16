@@ -4,6 +4,7 @@ export interface LinkHintBase {
 	letter: string;
 	type: LinkHintType;
 	linkText: string;
+	linkElement?: HTMLElement;
 }
 
 export interface PreviewLinkHint extends LinkHintBase {

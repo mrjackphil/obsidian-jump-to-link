@@ -2,7 +2,7 @@ import {LinkHintType, PreviewLinkHint} from "../../types";
 import {getLinkHintLetters} from "./common";
 
 export function getPreviewLinkHints(previewViewEl: HTMLElement, letters: string ): PreviewLinkHint[] {
-    const anchorEls = previewViewEl.querySelectorAll('a, .metadata-link-inner');
+    const anchorEls = previewViewEl.querySelectorAll<HTMLAnchorElement>('a, .metadata-link-inner');
     const embedEls = previewViewEl.querySelectorAll('.internal-embed');
 
     const linkHints: PreviewLinkHint[] = [];
@@ -44,7 +44,7 @@ export function getPreviewLinkHints(previewViewEl: HTMLElement, letters: string 
 
     embedEls.forEach((embedEl, _i) => {
         const linkText = embedEl.getAttribute('src');
-        const linkEl = embedEl.querySelector('.markdown-embed-link') as HTMLElement;
+        const linkEl = embedEl.querySelector<HTMLElement>('.markdown-embed-link');
 
         if (linkText && linkEl) {
             if (checkIsPreviewElOnScreen(previewViewEl, linkEl)) {

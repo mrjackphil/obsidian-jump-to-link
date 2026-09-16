@@ -1,7 +1,7 @@
 import {App, MarkdownView, Plugin, PluginSettingTab, Setting, View, editorLivePreviewField} from 'obsidian';
-import {Editor} from 'obsidian';
+import {Editor as CM5Editor} from "codemirror";
 import {EditorSelection} from "@codemirror/state";
-import {EditorView, ViewPlugin, DecorationSet} from "@codemirror/view";
+import {EditorView, ViewPlugin} from "@codemirror/view";
 import {LinkHintBase, Settings, SourceLinkHint} from 'types';
 import {MarkPlugin} from "./cm6-widget/MarkPlugin";
 
@@ -22,12 +22,33 @@ interface CursorState {
     vimMode?: string;
     anchor?: number;
 }
+
+/** Parts of the view/editor internals which are not covered by the public typings. */
+type ViewWithCM6 = { editor?: { cm: EditorView } };
+type LegacySourceView = { sourceMode: { cmEditor: CM5Editor } };
+type LivePreviewView = { currentMode: { editor: { containerEl: HTMLElement } } };
+type PreviewView = { previewMode: { containerEl: HTMLElement } };
+
+/**
+ * The CodeMirror 5 instance the vim extension keeps around. It is reachable
+ * through `editor.cm.cm` only while vim mode is enabled.
+ */
+type CursorActivityHandler = (editor: CM5Editor) => void;
+interface VimEditor {
+    _handlers: { cursorActivity: CursorActivityHandler[] };
+    on(event: 'cursorActivity', handler: CursorActivityHandler): void;
+    off(event: 'cursorActivity', handler: CursorActivityHandler): void;
+}
+type EditorWithVim = { cm?: { cm?: VimEditor } };
+/** `state.vim` is added by the vim extension and is not part of the CodeMirror typings. */
+type VimState = { vim?: { mode?: string } };
+
 export default class JumpToLink extends Plugin {
     isLinkHintActive: boolean = false;
     settings: Settings;
     prefixInfo: { prefix: string, shiftKey: boolean } | undefined = undefined;
-    markViewPlugin: ViewPlugin<any>
-    cmEditor: Editor | EditorView
+    markViewPlugin: ViewPlugin<MarkPlugin>
+    cmEditor: CM5Editor | EditorView
     currentView: View
     contentElement: HTMLElement
     mode: VIEW_MODE
@@ -35,12 +56,12 @@ export default class JumpToLink extends Plugin {
     cursorBeforeJump: CursorState = {};
 
     async onload() {
-        this.settings = await this.loadData() || new Settings();
+        this.settings = await this.loadData() as Settings || new Settings();
 
         this.addSettingTab(new SettingTab(this.app, this));
 
         const markViewPlugin = this.markViewPlugin = ViewPlugin.fromClass(MarkPlugin, {
-            decorations: (v: DecorationSet) => v.decorations
+            decorations: (v: MarkPlugin) => v.decorations
         });
         this.registerEditorExtension([markViewPlugin])
 
@@ -242,7 +263,7 @@ export default class JumpToLink extends Plugin {
 
                 // removing eventListener after proceeded
                 contentEl.removeEventListener("keydown", grabKey, { capture: true });
-                (contentContainerColor[0] as HTMLElement).style.color = originalColor;
+                restoreTextColor();
             }
         }
         contentEl.addEventListener('keydown', grabKey, { capture: true });
@@ -261,7 +282,7 @@ export default class JumpToLink extends Plugin {
             const file = this.app.workspace.getActiveFile()
             if (file) {
                 // the second argument is for the link resolution
-                this.app.workspace.openLinkText(decodeURI(link.linkText), file.path, heldShiftKey, {active: true});
+                void this.app.workspace.openLinkText(decodeURI(link.linkText), file.path, heldShiftKey, {active: true});
             }
         } else if (link.type === 'external') {
             window.open(link.linkText);
@@ -289,6 +310,7 @@ export default class JumpToLink extends Plugin {
         currentView.removeEventListener('click', () => this.removePopovers(linkHintHtmlElements))
         linkHintHtmlElements?.forEach(e => e.remove());
         currentView.querySelectorAll('.jl.popover').forEach(e => e.remove());
+        currentView.querySelectorAll('.jl-anchor').forEach(e => e.classList.remove('jl-anchor'));
 
         this.prefixInfo = undefined;
         if (this.mode == VIEW_MODE.SOURCE || this.mode == VIEW_MODE.LIVE_PREVIEW) {
@@ -302,7 +324,7 @@ export default class JumpToLink extends Plugin {
         const currentView = this.contentElement;
 
         linkHintHtmlElements?.forEach(e => {
-            if (e.innerHTML.length == 2 && e.innerHTML[0] == eventKey) {
+            if (e.textContent.length == 2 && e.textContent[0] == eventKey) {
                 e.classList.add("matched");
                 return;
             }
@@ -311,7 +333,7 @@ export default class JumpToLink extends Plugin {
         });
 
         currentView.querySelectorAll('.jl.popover').forEach(e => {
-            if (e.innerHTML.length == 2 && e.innerHTML[0] == eventKey) {
+            if (e.textContent.length == 2 && e.textContent[0] == eventKey) {
                 e.classList.add("matched");
                 return;
             }
@@ -431,8 +453,6 @@ class SettingTab extends PluginSettingTab {
 
         containerEl.empty();
 
-        containerEl.createEl('h2', {text: 'Settings for Jump To Link.'});
-
         new Setting(containerEl)
             .setName('Characters used for link hints')
             .setDesc('The characters placed next to each link after enter link-hint mode.')
@@ -471,7 +491,7 @@ class SettingTab extends PluginSettingTab {
             });
 
         new Setting(containerEl)
-            .setName('Jump to Link If Only One Link In Page')
+            .setName('Jump to link if only one link in page')
             .setDesc(
                 'If enabled, auto jump to link if there is only one link in page'
             )
@@ -497,9 +517,9 @@ class SettingTab extends PluginSettingTab {
             });
 
         new Setting(containerEl)
-            .setName('Number of characters for Lightspeed jump')
+            .setName('Number of characters for lightspeed jump')
             .setDesc(
-                'Determines how many characters you need to type to perform a Lightspeed jump.'
+                'Determines how many characters you need to type to perform a lightspeed jump.'
             )
             .addText(
                 (text) => {
