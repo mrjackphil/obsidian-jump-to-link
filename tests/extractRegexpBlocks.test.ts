@@ -52,8 +52,14 @@ describe("extractRegexpBlocks", () => {
         expect(indicesOf("one\ntwo\nthree", 0, WORDS, LETTERS, true)).toEqual([0, 4, 8]);
     });
 
-    it("supports the lightspeed style of pattern", () => {
-        // lightspeed builds "\b" + the typed characters
-        expect(indicesOf("the tall tree", 0, String.raw`\btr`, LETTERS, true)).toEqual([9]);
+    // The two lightspeed modes. "Lightspeed only jumps to start of words" is on by
+    // default, and prefixes the typed characters with a word boundary - so typing
+    // "tr" reaches the start of "tree" but not the "tr" inside "string".
+    it("matches only word starts when lightspeed anchors to word boundaries", () => {
+        expect(indicesOf("string tree", 0, String.raw`\btr`, LETTERS, true)).toEqual([7]);
+    });
+
+    it("matches inside words when lightspeed does not anchor", () => {
+        expect(indicesOf("string tree", 0, "tr", LETTERS, true)).toEqual([1, 7]);
     });
 });
