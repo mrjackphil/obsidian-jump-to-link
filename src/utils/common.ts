@@ -109,12 +109,7 @@ export function getMDHintLinks(content: string, offset: number, letters: string)
 }
 
 export function createWidgetElement(content: string, type: string) {
-    // See MarkWidget.toDOM: the Node level helpers append to the node they are
-    // called on, so a detached element has to be built by hand.
-    const linkHintEl = activeDocument.createElement('div');
-    linkHintEl.classList.add('jl', 'jl-' + type, 'popover');
-    linkHintEl.textContent = content;
-    return linkHintEl;
+    return createDiv({cls: ['jl', 'jl-' + type, 'popover'], text: content});
 }
 
 /**
