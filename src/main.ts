@@ -48,23 +48,20 @@ export default class JumpToLink extends Plugin {
 
         this.addCommand({
             id: 'activate-jump-to-link',
-            name: 'Jump to Link',
-            callback: this.action.bind(this, 'link'),
-            hotkeys: [{modifiers: ['Ctrl'], key: `'`}],
+            name: 'Show link hints',
+            callback: () => this.action('link'),
         });
 
         this.addCommand({
             id: "activate-jump-to-anywhere",
-            name: "Jump to Anywhere Regex",
-            callback: this.action.bind(this, 'regexp'),
-            hotkeys: [{modifiers: ["Ctrl"], key: ";"}],
+            name: "Jump to anywhere regex",
+            callback: () => this.action('regexp'),
         });
 
         this.addCommand({
             id: "activate-lightspeed-jump",
-            name: "Lightspeed Jump",
-            callback: this.action.bind(this, 'lightspeed'),
-            hotkeys: [],
+            name: "Lightspeed jump",
+            callback: () => this.action('lightspeed'),
         });
     }
 
@@ -82,7 +79,7 @@ export default class JumpToLink extends Plugin {
 
         switch (mode) {
             case VIEW_MODE.LEGACY:
-                this.cmEditor = (currentView as any).sourceMode.cmEditor;
+                this.cmEditor = (currentView as unknown as LegacySourceView).sourceMode.cmEditor;
                 break;
             case VIEW_MODE.LIVE_PREVIEW:
             case VIEW_MODE.SOURCE:

@@ -14,13 +14,13 @@ Quickly navigate between links, or jump to any word on the page using hotkeys.
 ![](./screenshots/settings.png)
 
 ### How to use (Link Navigation)
-- Open command palette (`Ctrl+P`), find and choose `Jump to link` command
-- You can use hotkey (`Ctrl + '` by default)
+- Open command palette (`Ctrl+P`), find and choose the `Jump to link: Show link hints` command
+- To reach it faster, assign your own hotkey under `Settings -> Hotkeys` (the plugin no longer ships default hotkeys, so they cannot clash with yours)
 - If there are any links in opened file you should see letters over them which should be pressed to open the link
 - Hold `Shift` while pressing link letters should open note in a new pane
 
 ### How to use Jump to Anywhere (Editor Navigation)
-- Use the command palette, or press the hotkey (`Ctrl + ;` by default) to instantly jump to any word on the page!
+- Use the command palette, or a hotkey you assigned to `Jump to anywhere regex`, to instantly jump to any word on the page!
 - If you hold `Shift` while pressing the hotkey, you will select to the word you jump to.
 - Jump to Anywhere is a RegEx based navigation feature, similar to [`vim-easymotion`](https://github.com/easymotion/vim-easymotion).
 - Jump to Anywhere works both in regular editor mode, and in VIM mode!
