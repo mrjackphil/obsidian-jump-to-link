@@ -10,19 +10,11 @@ export class MarkWidget extends WidgetType {
     }
 
     toDOM() {
-        const mark = activeDocument.createElement("span");
-        mark.innerText = this.mark;
-
-        const wrapper = activeDocument.createElement("div");
-        wrapper.style.display = "inline-block";
-        wrapper.style.position = "absolute";
-        wrapper.classList.add('jl');
-        wrapper.classList.add('jl-' + this.type);
-        wrapper.classList.add('popover');
+        const wrapper = activeDocument.createDiv({cls: ['jl', 'jl-' + this.type, 'jl-inline', 'popover']});
         if (this.matchedEventKey && this.mark.toUpperCase().startsWith(this.matchedEventKey.toUpperCase())) {
             wrapper.classList.add('matched');
         }
-        wrapper.append(mark);
+        wrapper.createSpan({text: this.mark});
 
         return wrapper;
     }

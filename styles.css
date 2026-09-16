@@ -14,10 +14,31 @@
     border-radius: 3px;
 }
 
+/* Hint rendered as a CodeMirror widget, inline with the surrounding text */
+.jl.popover.jl-inline {
+    display: inline-block;
+}
+
+/* Hint appended inside a reading-view link, anchored to its top left corner */
+.jl.popover.jl-preview {
+    top: 0;
+    left: 0;
+}
+
+/* Reading-view links need a positioning context for the hint above */
+.jl-anchor {
+    position: relative;
+}
+
 .jl.popover.matched::first-letter {
     color: rgb(143 107 7);
 }
 
 .theme-dark, .theme-light {
     --jump-to-link-lightspeed-color: var(--text-muted);
+}
+
+/* Dims the editor text while Lightspeed waits for the trigger characters */
+.cm-contentContainer.jl-lightspeed {
+    color: var(--jump-to-link-lightspeed-color);
 }

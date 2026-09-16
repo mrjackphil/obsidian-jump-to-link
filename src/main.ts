@@ -133,7 +133,7 @@ export default class JumpToLink extends Plugin {
             }
             case VIEW_MODE.LIVE_PREVIEW: {
                 const cm6Editor = this.cmEditor as EditorView;
-                const previewViewEl: HTMLElement = (currentView as any).currentMode.editor.containerEl;
+                const previewViewEl: HTMLElement = (currentView as unknown as LivePreviewView).currentMode.editor.containerEl;
                 const [previewLinkHints, sourceLinkHints, linkHintHtmlElements] = new LivePreviewLinkProcessor(previewViewEl, cm6Editor, letters).init();
                 cm6Editor.plugin(this.markViewPlugin).setLinks(sourceLinkHints);
                 this.app.workspace.updateOptions();
@@ -141,7 +141,7 @@ export default class JumpToLink extends Plugin {
                 break;
             }
             case VIEW_MODE.PREVIEW: {
-                const previewViewEl: HTMLElement = (currentView as any).previewMode.containerEl.querySelector('div.markdown-preview-view');
+                const previewViewEl: HTMLElement = (currentView as unknown as PreviewView).previewMode.containerEl.querySelector('div.markdown-preview-view');
                 const previewLinkHints = new PreviewLinkProcessor(previewViewEl, letters).init();
                 this.handleActions(previewLinkHints);
                 break;
@@ -176,11 +176,12 @@ export default class JumpToLink extends Plugin {
                 break
             case VIEW_MODE.PREVIEW:
                 break;
-            case VIEW_MODE.LEGACY:
-                const cmEditor = this.cmEditor as Editor
+            case VIEW_MODE.LEGACY: {
+                const cmEditor = this.cmEditor as CM5Editor
                 const links = new LegacyRegexpProcessor(cmEditor, whatToLookAt, letters, caseSensitive).init();
                 this.handleActions(links);
                 break;
+            }
             default:
                 break;
         }
@@ -362,7 +363,9 @@ export default class JumpToLink extends Plugin {
 
             const heldShiftKey = this.prefixInfo?.shiftKey || event.shiftKey;
 
-            linkHint && this.handleHotkey(heldShiftKey, linkHint);
+            if (linkHint) {
+                this.handleHotkey(heldShiftKey, linkHint);
+            }
 
             this.removePopovers(linkHintHtmlElements);
             contentElement.removeEventListener('keydown', handleKeyDown, { capture: true });
@@ -387,10 +390,10 @@ export default class JumpToLink extends Plugin {
      * This is the same approach taken by the obsidian-vimrc-plugin
      */
     watchForSelectionChange() {
-        const updateSelection = this.updateSelection.bind(this)
+        const updateSelection: CursorActivityHandler = (editor) => this.updateSelection(editor);
         const watchForChanges = () => {
             const editor = this.app.workspace.getActiveViewOfType(MarkdownView)?.editor;
-            const cm: Editor | undefined = (editor as any)?.cm?.cm;
+            const cm: VimEditor | undefined = (editor as unknown as EditorWithVim)?.cm?.cm;
 
             if (cm && !cm._handlers.cursorActivity.includes(updateSelection)) {
                 cm.on("cursorActivity", updateSelection);
@@ -406,7 +409,7 @@ export default class JumpToLink extends Plugin {
         const anchor = editor.listSelections()[0]?.anchor
         this.currentCursor = {
             anchor: anchor ? editor.indexFromPos(anchor) : undefined,
-            vimMode: editor.state.vim?.mode
+            vimMode: (editor.state as VimState).vim?.mode
         }
     }
 }
@@ -421,7 +424,7 @@ class SettingTab extends PluginSettingTab {
     }
 
     display(): void {
-        let {containerEl} = this;
+        const {containerEl} = this;
 
         containerEl.empty();
 
@@ -434,16 +437,16 @@ class SettingTab extends PluginSettingTab {
                 cb.setValue(this.plugin.settings.letters)
                     .onChange((value: string) => {
                         this.plugin.settings.letters = value
-                        this.plugin.saveData(this.plugin.settings)
+                        void this.plugin.saveData(this.plugin.settings)
                     })
             });
 
         new Setting(containerEl)
-            .setName('Jump To Anywhere')
+            .setName('Jump to anywhere')
             .setDesc("Regex based navigating in editor mode")
             .addText((text) =>
                 text
-                    .setPlaceholder('Custom Regex')
+                    .setPlaceholder('Custom regex')
                     .setValue(this.plugin.settings.jumpToAnywhereRegex)
                     .onChange(async (value) => {
                         this.plugin.settings.jumpToAnywhereRegex = value;
