@@ -10,7 +10,11 @@ export class MarkWidget extends WidgetType {
     }
 
     toDOM() {
-        const wrapper = activeDocument.createDiv({cls: ['jl', 'jl-' + this.type, 'jl-inline', 'popover']});
+        // The Obsidian element helpers on a Node append what they create to that
+        // node, so `activeDocument.createDiv()` would try to append to the document
+        // itself and throw. A widget has to be detached, so build it by hand.
+        const wrapper = activeDocument.createElement("div");
+        wrapper.classList.add("jl", "jl-" + this.type, "jl-inline", "popover");
         if (this.matchedEventKey && this.mark.toUpperCase().startsWith(this.matchedEventKey.toUpperCase())) {
             wrapper.classList.add('matched');
         }
