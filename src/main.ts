@@ -1,4 +1,13 @@
-import {App, MarkdownView, Plugin, PluginSettingTab, Setting, View, editorLivePreviewField} from 'obsidian';
+import {
+    App,
+    MarkdownView,
+    Plugin,
+    PluginSettingTab,
+    SettingControlBinding,
+    SettingDefinitionItem,
+    View,
+    editorLivePreviewField
+} from 'obsidian';
 import {Editor as CM5Editor} from "codemirror";
 import {EditorSelection} from "@codemirror/state";
 import {EditorView, ViewPlugin} from "@codemirror/view";
@@ -439,100 +448,94 @@ export default class JumpToLink extends Plugin {
     }
 }
 
-class SettingTab extends PluginSettingTab {
+class SettingTab extends PluginSettingTab<Settings> {
     plugin: JumpToLink
 
     constructor(app: App, plugin: JumpToLink) {
-        super(app, plugin)
+        super(app, plugin, plugin.settings)
 
         this.plugin = plugin
     }
 
-    display(): void {
-        const {containerEl} = this;
+    /**
+     * The declarative settings API (Obsidian 1.13+). Obsidian renders the tab
+     * from these definitions and indexes every setting for the settings search,
+     * which is why there is no `display()`.
+     */
+    getSettingDefinitions(): SettingDefinitionItem<keyof Settings>[] {
+        const defaults = new Settings();
 
-        containerEl.empty();
-
-        new Setting(containerEl)
-            .setName('Characters used for link hints')
-            .setDesc('The characters placed next to each link after enter link-hint mode.')
-            .addText(cb => {
-                cb.setValue(this.plugin.settings.letters)
-                    .onChange((value: string) => {
-                        this.plugin.settings.letters = value
-                        void this.plugin.saveData(this.plugin.settings)
-                    })
-            });
-
-        new Setting(containerEl)
-            .setName('Jump to anywhere')
-            .setDesc("Regex based navigating in editor mode")
-            .addText((text) =>
-                text
-                    .setPlaceholder('Custom regex')
-                    .setValue(this.plugin.settings.jumpToAnywhereRegex)
-                    .onChange(async (value) => {
-                        this.plugin.settings.jumpToAnywhereRegex = value;
-                        await this.plugin.saveData(this.plugin.settings);
-                    })
-            );
-
-        new Setting(containerEl)
-            .setName('Lightspeed regex case sensitivity')
-            .setDesc(
-                'If enabled, the regex for matching will be case sensitive.'
-            )
-            .addToggle((toggle) => {
-                toggle.setValue(this.plugin.settings.lightspeedCaseSensitive)
-                    .onChange(async (state) => {
-                    this.plugin.settings.lightspeedCaseSensitive = state;
-                    await this.plugin.saveData(this.plugin.settings);
-                });
-            });
-
-        new Setting(containerEl)
-            .setName('Jump to link if only one link in page')
-            .setDesc(
-                'If enabled, auto jump to link if there is only one link in page'
-            )
-            .addToggle((toggle) => {
-                toggle.setValue(this.plugin.settings.jumpToLinkIfOneLinkOnly)
-                    .onChange(async (state) => {
-                    this.plugin.settings.jumpToLinkIfOneLinkOnly = state;
-                    await this.plugin.saveData(this.plugin.settings);
-                });
-            });
-
-        new Setting(containerEl)
-            .setName('Lightspeed only jumps to start of words')
-            .setDesc(
-                'If enabled, lightspeed jumps will only target characters occuring at the start of words.'
-            )
-            .addToggle((toggle) => {
-                toggle.setValue(this.plugin.settings.lightspeedJumpToStartOfWord)
-                    .onChange(async (state) => {
-                    this.plugin.settings.lightspeedJumpToStartOfWord = state;
-                    await this.plugin.saveData(this.plugin.settings);
-                });
-            });
-
-        new Setting(containerEl)
-            .setName('Number of characters for lightspeed jump')
-            .setDesc(
-                'Determines how many characters you need to type to perform a lightspeed jump.'
-            )
-            .addText(
-                (text) => {
-                    text
-                        .setValue(String(this.plugin.settings.lightspeedCharacterCount))
-                        .onChange(async (value) => {
-                            const num = Number(value);
-                            if (!isNaN(num)) {
-                                this.plugin.settings.lightspeedCharacterCount = num;
-                                await this.plugin.saveData(this.plugin.settings);
-                            }
-                        }).inputEl.type = "number";
+        return [
+            {
+                name: 'Characters used for link hints',
+                desc: 'The characters placed next to each link after enter link-hint mode.',
+                control: {type: 'text', key: 'letters', defaultValue: defaults.letters}
+            },
+            {
+                name: 'Jump to anywhere',
+                desc: 'Regex based navigating in editor mode',
+                control: {
+                    type: 'text',
+                    key: 'jumpToAnywhereRegex',
+                    placeholder: 'Custom regex',
+                    defaultValue: defaults.jumpToAnywhereRegex
                 }
-            );
+            },
+            {
+                name: 'Lightspeed regex case sensitivity',
+                desc: 'If enabled, the regex for matching will be case sensitive.',
+                control: {
+                    type: 'toggle',
+                    key: 'lightspeedCaseSensitive',
+                    defaultValue: defaults.lightspeedCaseSensitive
+                }
+            },
+            {
+                name: 'Jump to link if only one link in page',
+                desc: 'If enabled, auto jump to link if there is only one link in page',
+                control: {
+                    type: 'toggle',
+                    key: 'jumpToLinkIfOneLinkOnly',
+                    defaultValue: defaults.jumpToLinkIfOneLinkOnly
+                }
+            },
+            {
+                name: 'Lightspeed only jumps to start of words',
+                desc: 'If enabled, lightspeed jumps will only target characters occuring at the start of words.',
+                control: {
+                    type: 'toggle',
+                    key: 'lightspeedJumpToStartOfWord',
+                    defaultValue: defaults.lightspeedJumpToStartOfWord
+                }
+            },
+            {
+                name: 'Number of characters for lightspeed jump',
+                desc: 'Determines how many characters you need to type to perform a lightspeed jump.',
+                control: {
+                    type: 'slider',
+                    key: 'lightspeedCharacterCount',
+                    min: 1,
+                    max: 5,
+                    step: 1,
+                    defaultValue: defaults.lightspeedCharacterCount
+                }
+            }
+        ];
+    }
+
+    /**
+     * Binds the declarative controls to the plugin data file instead of the
+     * vault config, which is where the default binding would write.
+     */
+    getControlBinding(key: string): SettingControlBinding {
+        const settings = this.plugin.settings as unknown as Record<string, unknown>;
+
+        return {
+            value: settings[key],
+            onChange: (value: unknown) => {
+                settings[key] = value;
+                return this.plugin.saveData(this.plugin.settings);
+            }
+        };
     }
 }
