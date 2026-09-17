@@ -34,13 +34,13 @@ importers:
         version: 9.39.5
       eslint-plugin-obsidianmd:
         specifier: ^0.4.2
-        version: 0.4.2(@eslint/js@9.39.5)(@eslint/json@0.14.0)(@typescript-eslint/parser@8.70.0(eslint@9.39.5)(typescript@4.9.5))(eslint@9.39.5)(obsidian@https://github.com/obsidianmd/obsidian-api/tarball/master(@codemirror/state@6.5.0)(@codemirror/view@6.38.6))(typescript-eslint@8.70.0(eslint@9.39.5)(typescript@4.9.5))
+        version: 0.4.2(@eslint/js@9.39.5)(@eslint/json@0.14.0)(@typescript-eslint/parser@8.70.0(eslint@9.39.5)(typescript@4.9.5))(eslint@9.39.5)(obsidian@1.13.1(@codemirror/state@6.5.0)(@codemirror/view@6.38.6))(typescript-eslint@8.70.0(eslint@9.39.5)(typescript@4.9.5))
       jsdom:
         specifier: ^30.0.1
         version: 30.0.1
       obsidian:
-        specifier: https://github.com/obsidianmd/obsidian-api/tarball/master
-        version: https://github.com/obsidianmd/obsidian-api/tarball/master(@codemirror/state@6.5.0)(@codemirror/view@6.38.6)
+        specifier: ^1.13.1
+        version: 1.13.1(@codemirror/state@6.5.0)(@codemirror/view@6.38.6)
       rollup:
         specifier: ^2.70.1
         version: 2.79.2
@@ -788,7 +788,6 @@ packages:
 
   eslint-plugin-obsidianmd@0.4.2:
     resolution: {integrity: sha512-NFp6wsRSvN0TU6EPi03uF2UQ3GuYyVtzjKDl25KyP8Bnz8gM0unX7R/e+VQ2JtMW2/3DC/VwIXjHnzAhB9JQwg==}
-    version: 0.4.2
     engines: {node: '>= 18'}
     hasBin: true
     peerDependencies:
@@ -957,7 +956,7 @@ packages:
 
   glob@7.2.3:
     resolution: {integrity: sha512-nFR0zLpU2YCaRxwoCJvL6UvCH2JFyFVIvwTLsIf21AuHlMskA1hhTdk+LlYJtOlYt9v6dvszD2BGRqBL+iQK9Q==}
-    deprecated: Glob versions prior to v9 are no longer supported
+    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
 
   globals@14.0.0:
     resolution: {integrity: sha512-oahGvuMGQlPw/ivIYBjVSrWAfWLBeku5tpPE2fOPLi+WHffIWbuh2tCjhyQhTBPMf5E9jDEH4FOmTYgYwbKwtQ==}
@@ -1393,9 +1392,8 @@ packages:
     resolution: {integrity: sha512-gXah6aZrcUxjWg2zR2MwouP2eHlCBzdV4pygudehaKXSGW4v2AsRQUK+lwwXhii6KFZcunEnmSUoYp5CXibxtA==}
     engines: {node: '>= 0.4'}
 
-  obsidian@https://github.com/obsidianmd/obsidian-api/tarball/master:
-    resolution: {tarball: https://github.com/obsidianmd/obsidian-api/tarball/master}
-    version: 1.13.0
+  obsidian@1.13.1:
+    resolution: {integrity: sha512-qtTEA2pmhJzhuhJqzbBFRYhpIOqvW+krDYjtFynv66KbxBbumHBlsJfWw3I4jtnK/6fZwbQhCrmmDdRwXmX56w==}
     peerDependencies:
       '@codemirror/state': 6.5.0
       '@codemirror/view': 6.38.6
@@ -2806,7 +2804,7 @@ snapshots:
     dependencies:
       eslint: 9.39.5
 
-  eslint-plugin-obsidianmd@0.4.2(@eslint/js@9.39.5)(@eslint/json@0.14.0)(@typescript-eslint/parser@8.70.0(eslint@9.39.5)(typescript@4.9.5))(eslint@9.39.5)(obsidian@https://github.com/obsidianmd/obsidian-api/tarball/master(@codemirror/state@6.5.0)(@codemirror/view@6.38.6))(typescript-eslint@8.70.0(eslint@9.39.5)(typescript@4.9.5)):
+  eslint-plugin-obsidianmd@0.4.2(@eslint/js@9.39.5)(@eslint/json@0.14.0)(@typescript-eslint/parser@8.70.0(eslint@9.39.5)(typescript@4.9.5))(eslint@9.39.5)(obsidian@1.13.1(@codemirror/state@6.5.0)(@codemirror/view@6.38.6))(typescript-eslint@8.70.0(eslint@9.39.5)(typescript@4.9.5)):
     dependencies:
       '@eslint-community/eslint-plugin-eslint-comments': 4.8.1(eslint@9.39.5)
       '@eslint/config-helpers': 0.4.2
@@ -2824,7 +2822,7 @@ snapshots:
       eslint-plugin-no-unsanitized: 4.1.5(eslint@9.39.5)
       eslint-plugin-security: 2.1.1
       globals: 14.0.0
-      obsidian: https://github.com/obsidianmd/obsidian-api/tarball/master(@codemirror/state@6.5.0)(@codemirror/view@6.38.6)
+      obsidian: 1.13.1(@codemirror/state@6.5.0)(@codemirror/view@6.38.6)
       semver: 7.8.5
       typescript: 5.4.5
       typescript-eslint: 8.70.0(eslint@9.39.5)(typescript@4.9.5)
@@ -3477,7 +3475,7 @@ snapshots:
       define-properties: 1.2.1
       es-object-atoms: 1.1.2
 
-  obsidian@https://github.com/obsidianmd/obsidian-api/tarball/master(@codemirror/state@6.5.0)(@codemirror/view@6.38.6):
+  obsidian@1.13.1(@codemirror/state@6.5.0)(@codemirror/view@6.38.6):
     dependencies:
       '@codemirror/state': 6.5.0
       '@codemirror/view': 6.38.6

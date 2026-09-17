@@ -3,7 +3,6 @@ import {
     MarkdownView,
     Plugin,
     PluginSettingTab,
-    SettingControlBinding,
     SettingDefinitionItem,
     View,
     editorLivePreviewField
@@ -448,11 +447,11 @@ export default class JumpToLink extends Plugin {
     }
 }
 
-class SettingTab extends PluginSettingTab<Settings> {
+class SettingTab extends PluginSettingTab {
     plugin: JumpToLink
 
     constructor(app: App, plugin: JumpToLink) {
-        super(app, plugin, plugin.settings)
+        super(app, plugin)
 
         this.plugin = plugin
     }
@@ -512,30 +511,24 @@ class SettingTab extends PluginSettingTab<Settings> {
                 name: 'Number of characters for lightspeed jump',
                 desc: 'Determines how many characters you need to type to perform a lightspeed jump.',
                 control: {
-                    type: 'slider',
+                    type: 'number',
                     key: 'lightspeedCharacterCount',
                     min: 1,
                     max: 5,
-                    step: 1,
                     defaultValue: defaults.lightspeedCharacterCount
                 }
             }
         ];
     }
 
-    /**
-     * Binds the declarative controls to the plugin data file instead of the
-     * vault config, which is where the default binding would write.
-     */
-    getControlBinding(key: string): SettingControlBinding {
-        const settings = this.plugin.settings as unknown as Record<string, unknown>;
+    getControlValue(key: string): unknown {
+        return (this.plugin.settings as unknown as Record<string, unknown>)[key];
+    }
 
-        return {
-            value: settings[key],
-            onChange: (value: unknown) => {
-                settings[key] = value;
-                return this.plugin.saveData(this.plugin.settings);
-            }
-        };
+    /** Persists through `saveData`, the store the settings are loaded from. */
+    setControlValue(key: string, value: unknown): Promise<void> {
+        (this.plugin.settings as unknown as Record<string, unknown>)[key] = value;
+
+        return this.plugin.saveData(this.plugin.settings);
     }
 }
