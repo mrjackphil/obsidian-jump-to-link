@@ -1,6 +1,6 @@
 {
   "name": "mrj-jump-to-link",
-  "version": "0.5.17",
+  "version": "0.6.0",
   "description": "Open a link in the current document or navigate by regex in editor mode using a hotkey.",
   "main": "main.js",
   "scripts": {
