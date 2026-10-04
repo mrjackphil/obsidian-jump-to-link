@@ -113,6 +113,12 @@ export default class JumpToLink extends Plugin {
             case VIEW_MODE.LIVE_PREVIEW:
             case VIEW_MODE.SOURCE:
                 this.cmEditor = (<ViewWithCM6>currentView).editor.cm;
+                if (this.currentCursor.vimMode !== 'visual' && this.currentCursor.vimMode !== 'visual block') {
+                    this.cursorBeforeJump = {
+                        ...this.currentCursor,
+                        anchor: this.cmEditor.state.selection.main.anchor,
+                    };
+                }
                 break;
         }
 
