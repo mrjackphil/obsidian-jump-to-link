@@ -104,6 +104,13 @@ describe("getMDHintLinks", () => {
         ]);
     });
 
+    it("does not let an external link swallow the link before it", () => {
+        expect(linksIn("[B](b.md) [C](https://c.dev)")).toEqual([
+            {index: 0, type: "internal", linkText: "b.md"},
+            {index: 10, type: "external", linkText: "https://c.dev"},
+        ]);
+    });
+
     // ---------------------------------------------------------------------
     // Known bugs. These describe what the code *should* do; `it.fails` asserts
     // that it currently does not, so the suite stays green until the bug is
@@ -116,16 +123,6 @@ describe("getMDHintLinks", () => {
         // branch matches nothing, so the hint lands one character too far right.
         expect(linksIn("https://example.com")).toEqual([
             {index: 0, type: "external", linkText: "https://example.com"},
-        ]);
-    });
-
-    it.fails("should not let an external link swallow the link before it", () => {
-        // regExExternal is `\[...\]\((.+?://.+?)\)` and `.` happily crosses the
-        // closing paren of an earlier link, so one match spans both links and
-        // the first link loses its hint entirely.
-        expect(linksIn("[B](b.md) [C](https://c.dev)")).toEqual([
-            {index: 0, type: "internal", linkText: "b.md"},
-            {index: 10, type: "external", linkText: "https://c.dev"},
         ]);
     });
 });
