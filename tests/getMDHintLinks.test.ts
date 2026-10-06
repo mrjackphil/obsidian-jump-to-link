@@ -97,6 +97,13 @@ describe("getMDHintLinks", () => {
         expect(getMDHintLinks(content, 0, "ab")).toHaveLength(4);
     });
 
+    it("finds markdown links whose title contains brackets", () => {
+        expect(linksIn("[A [b] c](a.md)\n[D [e] [f]](https://d.dev)")).toEqual([
+            {index: 0, type: "internal", linkText: "a.md"},
+            {index: 16, type: "external", linkText: "https://d.dev"},
+        ]);
+    });
+
     // ---------------------------------------------------------------------
     // Known bugs. These describe what the code *should* do; `it.fails` asserts
     // that it currently does not, so the suite stays green until the bug is

@@ -57,10 +57,10 @@ export function getLinkHintLetters(alphabet: string, numLinkHints: number): stri
 export function getMDHintLinks(content: string, offset: number, letters: string): SourceLinkHint[] {
     // expecting either [[Link]] or [[Link|Title]]
     const regExInternal = /\[\[(.+?)(\|.+?)?]]/g;
-    // expecting [Title](../example.md)
-    const regExMdInternal = /\[[^[\]]+?\]\(((\.\.|\w|\d).+?)\)/g;
+    // expecting [Title](../example.md); titles may contain one level of [brackets]
+    const regExMdInternal = /\[(?:[^[\]]|\[[^[\]]*\])+?\]\(((\.\.|\w|\d).+?)\)/g;
     // expecting [Title](file://link), [Title](https://link) or any other [Jira-123](jira://bla-bla) link
-    const regExExternal = /\[[^[\]]+?\]\((.+?:\/\/.+?)\)/g;
+    const regExExternal = /\[(?:[^[\]]|\[[^[\]]*\])+?\]\((.+?:\/\/.+?)\)/g;
     // expecting http://hogehoge or https://hogehoge
     const regExUrl = /( |\n|^)(https?:\/\/[^ \n]+)/g;
 
